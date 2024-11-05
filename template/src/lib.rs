@@ -55,8 +55,6 @@ pub enum RenderTemplateStrError {
 #[error(transparent)]
 pub struct RenderError(#[from] minijinja::Error);
 
-////////////////////////////////////////////////////////////////////////////////
-
 impl HandleBuilder {
     /// Returns a mutable borrow to the internal environment. This may be useful
     /// for adding stuff to the minijinja environment, e.g setting a path loader.
@@ -64,6 +62,7 @@ impl HandleBuilder {
         &mut self.env
     }
 
+    /// Watches the directories for any changes, and triggers the notifier.
     pub fn set_watch_paths(mut self, paths: Vec<PathBuf>) -> Self {
         self.watch_paths = paths;
         self
@@ -92,13 +91,6 @@ impl HandleBuilder {
 }
 
 impl Handle {
-    pub fn get_env(&self) -> Result<Environment<'static>, EnvError> {
-        match self {
-            Handle::Static(env) => Ok(env.clone()),
-            Handle::Autoreload(ar) => Ok(ar.0.acquire_env()?.clone()),
-        }
-    }
-
     pub fn builder() -> HandleBuilder {
         HandleBuilder {
             env: Environment::new(),
@@ -112,13 +104,24 @@ impl Handle {
         context: S,
         template_file: &str,
     ) -> Result<String, RenderTemplateError> {
-        let env = self.get_env()?;
+        match self {
+            Handle::Static(env) => {
+                let template = env
+                    .get_template(template_file)
+                    .map_err(|e| GetTemplateError(e))?;
 
-        let template = env
-            .get_template(template_file)
-            .map_err(|e| GetTemplateError(e))?;
+                Ok(template.render(context).map_err(|e| RenderError(e))?)
+            }
+            Handle::Autoreload(ar) => {
+                let env = ar.0.acquire_env().unwrap();
 
-        Ok(template.render(context).map_err(|e| RenderError(e))?)
+                let template = env
+                    .get_template(template_file)
+                    .map_err(|e| GetTemplateError(e))?;
+
+                Ok(template.render(context).map_err(|e| RenderError(e))?)
+            }
+        }
     }
 
     pub fn render_template_str<S: Serialize>(
@@ -126,9 +129,17 @@ impl Handle {
         context: S,
         template: &str,
     ) -> Result<String, RenderTemplateStrError> {
-        let env = self.get_env()?;
-        let template = env.template_from_str(template).unwrap();
-        Ok(template.render(context).map_err(|e| RenderError(e))?)
+        match self {
+            Handle::Static(env) => {
+                let template = env.template_from_str(template).map_err(|e| EnvError(e))?;
+                Ok(template.render(context).map_err(|e| RenderError(e))?)
+            }
+            Handle::Autoreload(ar) => {
+                let env = ar.0.acquire_env().map_err(|e| EnvError(e))?;
+                let template = env.template_from_str(template).unwrap();
+                Ok(template.render(context).map_err(|e| RenderError(e))?)
+            }
+        }
     }
 }
 

@@ -11,6 +11,7 @@ pub struct HandleBuilder {
     pub env: Environment<'static>,
 }
 
+#[derive(Clone)]
 pub enum Handle {
     Static(Environment<'static>),
     Autoreload(Arc<AutoReloader>),

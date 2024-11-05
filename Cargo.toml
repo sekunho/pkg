@@ -12,7 +12,6 @@ rust-version = "1.79"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]
-config = { version = "0.13" }
 minijinja = { version = "2.3.1", features = ["loader", "urlencode"] }
 minijinja-autoreload = { version = "2.3.1" }
 minijinja-contrib = { version = "2.3.1", features = ["datetime"] }

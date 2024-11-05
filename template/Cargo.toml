@@ -9,7 +9,6 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-config.workspace = true
 minijinja.workspace = true
 minijinja-autoreload.workspace = true
 minijinja-contrib.workspace = true

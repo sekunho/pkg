@@ -11,6 +11,5 @@ version.workspace = true
 [dependencies]
 minijinja.workspace = true
 minijinja-autoreload.workspace = true
-minijinja-contrib.workspace = true
 serde.workspace = true
 thiserror.workspace = true

@@ -82,6 +82,12 @@ impl Handle {
         }
     }
 
+    pub fn builder() -> HandleBuilder {
+        HandleBuilder {
+            env: Environment::new(),
+        }
+    }
+
     pub fn render_template<S: Serialize>(
         &self,
         context: S,

@@ -8,8 +8,9 @@ pub use minijinja::{context, Error};
 use thiserror::Error;
 
 pub struct HandleBuilder {
-    pub env: Environment<'static>,
-    pub watch_paths: Vec<PathBuf>,
+    env: Environment<'static>,
+    watch_paths: Vec<PathBuf>,
+    fast_reload: bool,
 }
 
 #[derive(Clone)]
@@ -68,11 +69,18 @@ impl HandleBuilder {
         self
     }
 
+    pub fn set_fast_reload(mut self, fast_reload: bool) -> Self {
+        self.fast_reload = fast_reload;
+        self
+    }
+
     pub fn build_autoreload(self) -> Handle {
         let autoreloader = minijinja_autoreload::AutoReloader::new(move |notifier| {
             for path in self.watch_paths.iter() {
                 notifier.watch_path(path, true);
             }
+
+            notifier.set_fast_reload(self.fast_reload);
             Ok(self.env.clone())
         });
         Handle::Autoreload(Arc::from(AutoReloader(autoreloader)))
@@ -95,6 +103,7 @@ impl Handle {
         HandleBuilder {
             env: Environment::new(),
             watch_paths: Vec::new(),
+            fast_reload: false,
         }
     }
 

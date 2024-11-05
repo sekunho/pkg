@@ -6,9 +6,9 @@ members = ["template"]
 edition = "2021"
 homepage = "https://github.com/sekunho/pkg"
 include = ["../../LICENSE", "**/*.rs", "Cargo.toml"]
-license = "AGPL-3.0-only"
-repository = "https://github.com/sekunho/puggle"
-rust-version = "1.79"
+license = "BSD-3-Clause"
+repository = "https://github.com/sekunho/pkg"
+rust-version = "1.82"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]

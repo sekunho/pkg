@@ -7,8 +7,6 @@ use serde::Serialize;
 pub use minijinja::{context, Error};
 use thiserror::Error;
 
-pub mod config;
-
 pub struct HandleBuilder {
     pub env: Environment<'static>,
 }

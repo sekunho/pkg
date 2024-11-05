@@ -2,6 +2,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use minijinja::Environment;
+use minijinja_autoreload::AutoReloader;
 use serde::Serialize;
 
 pub use minijinja::{context, Error};
@@ -18,8 +19,6 @@ pub enum Handle {
     Static(Environment<'static>),
     Autoreload(Arc<AutoReloader>),
 }
-
-pub struct AutoReloader(minijinja_autoreload::AutoReloader);
 
 #[derive(Debug, Error)]
 #[error("failed to fetch/render template {0}")]
@@ -82,7 +81,7 @@ impl HandleBuilder {
             notifier.set_fast_reload(self.fast_reload);
             Ok(self.env.clone())
         });
-        Handle::Autoreload(Arc::from(AutoReloader(autoreloader)))
+        Handle::Autoreload(Arc::from(autoreloader))
     }
 
     pub fn build_static(self) -> Handle {
@@ -113,7 +112,7 @@ impl Handle {
                 Ok(template.render(context).map_err(|e| RenderError(e))?)
             }
             Handle::Autoreload(ar) => {
-                let env = ar.0.acquire_env().unwrap();
+                let env = ar.acquire_env().unwrap();
 
                 let template = env
                     .get_template(template_file)
@@ -135,16 +134,10 @@ impl Handle {
                 Ok(template.render(context).map_err(|e| RenderError(e))?)
             }
             Handle::Autoreload(ar) => {
-                let env = ar.0.acquire_env().map_err(|e| EnvError(e))?;
+                let env = ar.acquire_env().map_err(|e| EnvError(e))?;
                 let template = env.template_from_str(template).unwrap();
                 Ok(template.render(context).map_err(|e| RenderError(e))?)
             }
         }
-    }
-}
-
-impl std::fmt::Debug for AutoReloader {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AutoReloader")
     }
 }

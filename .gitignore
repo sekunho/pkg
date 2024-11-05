@@ -9,3 +9,4 @@ blog
 projects
 .DS_Store
 assets
+Cargo.lock

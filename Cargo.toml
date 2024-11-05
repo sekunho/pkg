@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["template"]
+
+[workspace.package]
+edition = "2021"
+homepage = "https://github.com/sekunho/pkg"
+include = ["../../LICENSE", "**/*.rs", "Cargo.toml"]
+license = "AGPL-3.0-only"
+repository = "https://github.com/sekunho/puggle"
+rust-version = "1.79"
+version = "0.1.0-alpha"
+
+[workspace.dependencies]
+minijinja = { version = "2.4", default-features = false }
+minijinja-autoreload = { version = "2.3.1" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = { version = "1.0" }

@@ -1,0 +1,11 @@
+.direnv
+result
+target
+
+/target
+dist
+public
+blog
+projects
+.DS_Store
+assets

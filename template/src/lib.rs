@@ -92,7 +92,7 @@ impl HandleBuilder {
 }
 
 impl Handle {
-    fn get_env(&self) -> Result<Environment<'static>, EnvError> {
+    pub fn get_env(&self) -> Result<Environment<'static>, EnvError> {
         match self {
             Handle::Static(env) => Ok(env.clone()),
             Handle::Autoreload(ar) => Ok(ar.0.acquire_env()?.clone()),

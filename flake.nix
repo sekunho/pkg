@@ -22,11 +22,9 @@
           fenix.packages.${system}.stable.toolchain;
       in
       {
-        checks = {
-        };
+        checks = { };
 
-        packages = {
-        };
+        packages = { };
 
         devShells = {
           default = craneLib.devShell {
@@ -35,6 +33,9 @@
               nixpkgs-fmt
               cargo-watch
               just
+
+              openssl
+              pkg-config
             ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin ([ pkgs.libiconv ]);
           };
         };

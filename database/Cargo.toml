@@ -1,0 +1,35 @@
+[package]
+name = "database"
+edition.workspace = true
+homepage.workspace = true
+include.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+config.workspace = true
+
+## DB
+tokio-postgres.workspace = true
+postgres-types.workspace = true
+deadpool-postgres.workspace = true
+postgres-openssl.workspace = true
+openssl.workspace = true
+
+## Error
+thiserror.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+
+## Types
+time.workspace = true
+
+## Async
+tokio.workspace = true
+async-trait.workspace = true
+
+## Logging
+tracing.workspace = true

@@ -38,7 +38,7 @@ pub enum RenderTemplateError {
     EnvError(#[from] EnvError),
     #[error("failed to get template from environment. reason: {0}")]
     GetTemplateError(#[from] GetTemplateError),
-    #[error("f7ailed to render template with the provided context. reason: {0}")]
+    #[error("failed to render template with the provided context. reason: {0}")]
     RenderError(#[from] RenderError),
 }
 

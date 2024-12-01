@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     crane.url = "github:ipetkov/crane";
@@ -36,6 +36,7 @@
 
               openssl
               pkg-config
+              git
             ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin ([ pkgs.libiconv ]);
           };
         };

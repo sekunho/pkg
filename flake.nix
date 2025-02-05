@@ -36,6 +36,7 @@
 
               openssl
               pkg-config
+              sqlite
               git
             ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin ([ pkgs.libiconv ]);
           };

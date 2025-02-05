@@ -118,17 +118,3 @@ impl Handle {
         self.pool.get().await
     }
 }
-
-impl Config {
-    pub fn from_env(prefix: &str, separator: &str) -> Result<Self, config::ConfigError> {
-        let source = config::Environment::with_prefix(prefix)
-            .try_parsing(true)
-            .separator(separator);
-
-        let config = config::Config::builder().add_source(source).build()?;
-        let db_config: Config = config.try_deserialize()?;
-
-        tracing::info!("{:?}", db_config);
-        Ok(db_config)
-    }
-}

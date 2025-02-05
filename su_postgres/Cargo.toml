@@ -1,5 +1,5 @@
 [package]
-name = "database"
+name = "su_postgres"
 edition.workspace = true
 homepage.workspace = true
 include.workspace = true

@@ -1,5 +1,5 @@
 [package]
-name = "sqlite"
+name = "su_sqlite"
 edition.workspace = true
 homepage.workspace = true
 include.workspace = true

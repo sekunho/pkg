@@ -1,5 +1,5 @@
 [package]
-name = "template"
+name = "su_template"
 edition.workspace = true
 homepage.workspace = true
 include.workspace = true

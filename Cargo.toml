@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["template", "postgres", "sqlite"]
+members = ["su_*"]
 
 [workspace.package]
 edition = "2021"
@@ -13,9 +13,9 @@ version = "0.1.0-alpha"
 
 [workspace.dependencies]
 # Internal crates
-postgres = { path = "postgres", version = "0.1.0-alpha" }
-sqlite = { path = "sqlite", version = "0.1.0-alpha" }
-template = { path = "template", version = "0.1.0-alpha" }
+su_postgres = { path = "su_postgres", version = "0.1.0-alpha" }
+su_sqlite = { path = "su_sqlite", version = "0.1.0-alpha" }
+su_template = { path = "su_template", version = "0.1.0-alpha" }
 
 # Templating
 minijinja.version = "2.7"

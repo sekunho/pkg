@@ -10,4 +10,5 @@ feature requests beyond my own use cases.
 
 - `template`: A templating crate for `jinja2` that uses `minijinja` under the
 hood.
-- `database`: A `postgresql` adapter
+- `su_postgres`: A `postgresql` adapter
+- `su_sqlite`: An SQLite adapter

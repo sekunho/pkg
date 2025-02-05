@@ -45,6 +45,3 @@ thiserror.version = "1.0"
 # Misc. data types
 config.version = "0.15"
 time.version = "0.3"
-
-# Logging/metrics
-tracing.version = "0.1"

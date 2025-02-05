@@ -30,6 +30,3 @@ time.workspace = true
 ## Async
 tokio.workspace = true
 async-trait.workspace = true
-
-## Logging
-tracing.workspace = true

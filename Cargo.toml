@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["template", "database"]
+members = ["template", "postgres", "sqlite"]
 
 [workspace.package]
 edition = "2021"
@@ -12,25 +12,39 @@ rust-version = "1.82"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]
-database = { path = "database", version = "0.1.0-alpha" }
+# Internal crates
+postgres = { path = "postgres", version = "0.1.0-alpha" }
+sqlite = { path = "sqlite", version = "0.1.0-alpha" }
 template = { path = "template", version = "0.1.0-alpha" }
 
+# Templating
 minijinja.version = "2.7"
 minijinja-autoreload.version = "2.7"
+
+# Serialization
 serde.version = "1.0"
 serde_json = "1.0"
 
-# DB
-tokio.version = "1.41"
+# DB (postgres)
 tokio-postgres.version = "0.7"
 postgres-types.version = "0.2"
 deadpool-postgres.version = "0.14"
 postgres-openssl.version = "0.5"
 openssl.version = "0.10"
 
-config.version = "0.15"
+# DB (sqlite)
+deadpool-sqlite = { git = "https://github.com/bikeshedder/deadpool.git" }
 
-thiserror.version = "1.0"
-time.version = "0.3"
+# Async
 async-trait.version = "0.1"
+tokio.version = "1.41"
+
+# Errors
+thiserror.version = "1.0"
+
+# Misc. data types
+config.version = "0.15"
+time.version = "0.3"
+
+# Logging/metrics
 tracing.version = "0.1"

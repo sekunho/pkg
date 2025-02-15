@@ -9,7 +9,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-minijinja = { workspace = true, default-features = false }
+minijinja = { workspace = true }
 minijinja-autoreload = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }

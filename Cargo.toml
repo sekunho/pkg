@@ -18,7 +18,7 @@ su_sqlite = { path = "su_sqlite", version = "0.1.0-alpha" }
 su_template = { path = "su_template", version = "0.1.0-alpha" }
 
 # Templating
-minijinja.version = "2.7"
+minijinja = { version = "2.7", default-features = false }
 minijinja-autoreload.version = "2.7"
 
 # Serialization
@@ -30,10 +30,11 @@ tokio-postgres.version = "0.7"
 postgres-types.version = "0.2"
 deadpool-postgres.version = "0.14"
 postgres-openssl.version = "0.5"
-openssl.version = "0.10"
 
 # DB (sqlite)
-deadpool-sqlite = { git = "https://github.com/bikeshedder/deadpool.git" }
+deadpool-sqlite = { version = "0.10" }
+
+openssl.version = "0.10"
 
 # Async
 async-trait.version = "0.1"

@@ -15,7 +15,8 @@ pub enum CreateHandleError {
 
 impl Handle {
     pub fn new(config: Config) -> Result<Self, CreateHandleError> {
-        let cfg = deadpool_sqlite::Config::new(config.name);
+        let mut cfg = deadpool_sqlite::Config::new(config.name);
+        cfg.pool = config.pool_config;
         let pool = cfg.create_pool(deadpool_sqlite::Runtime::Tokio1)?;
         Ok(Self { pool })
     }

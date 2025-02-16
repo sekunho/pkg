@@ -1,8 +1,12 @@
+use deadpool_sqlite::PoolConfig;
 use serde::Deserialize;
 
 #[derive(Clone, Deserialize)]
 pub struct Config {
     pub name: String,
+
+    #[serde(flatten)]
+    pub pool_config: Option<PoolConfig>,
 }
 
 impl Config {

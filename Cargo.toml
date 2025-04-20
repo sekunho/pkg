@@ -18,8 +18,8 @@ su_sqlite = { path = "su_sqlite", version = "0.1.0-alpha" }
 su_template = { path = "su_template", version = "0.1.0-alpha" }
 
 # Templating
-minijinja = { version = "2.7", default-features = false }
-minijinja-autoreload.version = "2.7"
+minijinja = { version = "2.9", default-features = false, features = [ "serde" ] }
+minijinja-autoreload.version = "2.9"
 
 # Serialization
 serde.version = "1.0"
@@ -38,7 +38,7 @@ openssl.version = "0.10"
 
 # Async
 async-trait.version = "0.1"
-tokio.version = "1.41"
+tokio.version = "1.44"
 
 # Errors
 thiserror.version = "1.0"

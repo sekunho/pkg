@@ -38,7 +38,7 @@ openssl.version = "0.10"
 
 # Async
 async-trait.version = "0.1"
-tokio.version = "1.41"
+tokio.version = "1.44"
 
 # Errors
 thiserror.version = "1.0"

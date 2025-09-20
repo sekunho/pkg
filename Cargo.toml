@@ -40,9 +40,6 @@ openssl.version = "0.10"
 async-trait.version = "0.1"
 tokio.version = "1.44"
 
-# Errors
-thiserror.version = "2.0"
-
 # Misc. data types
 config.version = "0.15"
 time.version = "0.3"

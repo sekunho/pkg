@@ -12,4 +12,3 @@ version.workspace = true
 minijinja = { workspace = true }
 minijinja-autoreload = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-thiserror = { workspace = true }

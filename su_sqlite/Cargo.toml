@@ -12,4 +12,3 @@ version.workspace = true
 config.workspace = true
 deadpool-sqlite.workspace = true
 serde.workspace = true
-thiserror.workspace = true

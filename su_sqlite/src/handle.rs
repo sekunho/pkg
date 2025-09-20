@@ -1,5 +1,4 @@
 use deadpool_sqlite::{CreatePoolError, Pool, PoolConfig};
-use thiserror::Error;
 
 use crate::config::Config;
 
@@ -8,10 +7,33 @@ pub struct Handle {
     pub read_pool: Pool,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum CreateHandleError {
-    #[error("failed to create DB pool. reason: {0}")]
-    Pool(#[from] CreatePoolError),
+    Pool(CreatePoolError),
+}
+
+impl std::error::Error for CreateHandleError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
+    }
+}
+
+impl std::fmt::Display for CreateHandleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CreateHandleError::Pool(create_pool_error) => write!(f, "could not create DB pool {}", create_pool_error),
+        }
+    }
+}
+
+impl From<CreatePoolError> for CreateHandleError {
+    fn from(value: CreatePoolError) -> Self {
+        Self::Pool(value)
+    }
 }
 
 impl Handle {

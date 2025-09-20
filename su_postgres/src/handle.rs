@@ -3,7 +3,6 @@ use core::fmt::Debug;
 use deadpool_postgres::Runtime;
 use openssl::ssl::{SslConnector, SslFiletype, SslMethod};
 use postgres_openssl::MakeTlsConnector;
-use thiserror::Error;
 use tokio_postgres::NoTls;
 
 use crate::config::Config;
@@ -30,14 +29,49 @@ impl From<MakeTlsConnector> for Connector {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum CreateHandleError {
-    #[error("failed to create DB pool")]
-    Pool(#[from] deadpool_postgres::CreatePoolError),
-    #[error("failed to read password file. reason: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("failed to setup ssl {0}")]
-    Ssl(#[from] openssl::error::ErrorStack),
+    Pool(deadpool_postgres::CreatePoolError),
+    Io(std::io::Error),
+    Ssl(openssl::error::ErrorStack),
+}
+
+impl std::error::Error for CreateHandleError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
+    }
+}
+
+impl std::fmt::Display for CreateHandleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CreateHandleError::Pool(create_pool_error) => write!(f, "could not create DB pool {}", create_pool_error),
+            CreateHandleError::Io(error) => write!(f, "failed to read password file {}", error),
+            CreateHandleError::Ssl(error_stack) => write!(f, "ssl error {}", error_stack),
+        }
+    }
+}
+
+impl From<deadpool_postgres::CreatePoolError> for CreateHandleError {
+    fn from(value: deadpool_postgres::CreatePoolError) -> Self {
+        Self::Pool(value)
+    }
+}
+
+impl From<std::io::Error> for CreateHandleError {
+    fn from(value: std::io::Error) -> Self {
+        Self::Io(value)
+    }
+}
+
+impl From<openssl::error::ErrorStack> for CreateHandleError {
+    fn from(value: openssl::error::ErrorStack) -> Self {
+        Self::Ssl(value)
+    }
 }
 
 impl Handle {

@@ -9,6 +9,5 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-config.workspace = true
 deadpool-sqlite.workspace = true
-serde.workspace = true
+deadpool.workspace = true

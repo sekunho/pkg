@@ -110,9 +110,17 @@ impl std::error::Error for RenderTemplateError {
 impl std::fmt::Display for RenderTemplateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RenderTemplateError::EnvError(env_error) => write!(f, "failed to acquire environment {}", env_error),
-            RenderTemplateError::GetTemplateError(get_template_error) => write!(f, "unable to get template from env {}", get_template_error),
-            RenderTemplateError::RenderError(render_error) => write!(f, "error in rendering with the provided context {}", render_error),
+            RenderTemplateError::EnvError(env_error) => {
+                write!(f, "failed to acquire environment {}", env_error)
+            }
+            RenderTemplateError::GetTemplateError(get_template_error) => {
+                write!(f, "unable to get template from env {}", get_template_error)
+            }
+            RenderTemplateError::RenderError(render_error) => write!(
+                f,
+                "error in rendering with the provided context {}",
+                render_error
+            ),
         }
     }
 }
@@ -166,8 +174,14 @@ impl From<RenderError> for RenderTemplateStrError {
 impl std::fmt::Display for RenderTemplateStrError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RenderTemplateStrError::EnvError(env_error) => write!(f, "failed to acquire environment {}", env_error),
-            RenderTemplateStrError::RenderError(render_error) => write!(f, "error in rendering with the provided context {}", render_error),
+            RenderTemplateStrError::EnvError(env_error) => {
+                write!(f, "failed to acquire environment {}", env_error)
+            }
+            RenderTemplateStrError::RenderError(render_error) => write!(
+                f,
+                "error in rendering with the provided context {}",
+                render_error
+            ),
         }
     }
 }

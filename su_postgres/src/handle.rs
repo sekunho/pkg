@@ -49,7 +49,9 @@ impl std::error::Error for CreateHandleError {
 impl std::fmt::Display for CreateHandleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CreateHandleError::Pool(create_pool_error) => write!(f, "could not create DB pool {}", create_pool_error),
+            CreateHandleError::Pool(create_pool_error) => {
+                write!(f, "could not create DB pool {}", create_pool_error)
+            }
             CreateHandleError::Io(error) => write!(f, "failed to read password file {}", error),
             CreateHandleError::Ssl(error_stack) => write!(f, "ssl error {}", error_stack),
         }

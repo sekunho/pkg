@@ -33,6 +33,7 @@ postgres-openssl.version = "0.5"
 
 # DB (sqlite)
 deadpool-sqlite = { version = "0.12", features = ["serde"] }
+deadpool = { version = "0.12", default-features = false, features = ["managed"] }
 
 openssl.version = "0.10"
 

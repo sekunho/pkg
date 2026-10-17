@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+use std::sync::Arc;
+
 use minijinja::Environment;
 
 pub use minijinja::{context, Error};
@@ -9,70 +11,14 @@ pub struct HandleBuilder {
 }
 
 #[derive(Clone)]
-pub struct Handle(Environment<'static>);
-
-#[derive(Debug)]
-pub struct TemplateError(minijinja::Error);
-
-impl std::error::Error for TemplateError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
-
-impl From<minijinja::Error> for TemplateError {
-    fn from(value: minijinja::Error) -> Self {
-        Self(value)
-    }
-}
-
-impl std::fmt::Display for TemplateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Debug)]
-pub struct EnvError(minijinja::Error);
-
-impl std::error::Error for EnvError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-}
-
-impl From<minijinja::Error> for EnvError {
-    fn from(value: minijinja::Error) -> Self {
-        Self(value)
-    }
-}
-
-impl std::fmt::Display for EnvError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
+pub struct Handle(Arc<Environment<'static>>);
 
 #[derive(Debug)]
 pub struct GetTemplateError(minijinja::Error);
 
 impl std::error::Error for GetTemplateError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-}
-
-impl From<minijinja::Error> for GetTemplateError {
-    fn from(value: minijinja::Error) -> Self {
-        Self(value)
+        Some(&self.0)
     }
 }
 
@@ -83,43 +29,32 @@ impl std::fmt::Display for GetTemplateError {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum RenderTemplateError {
-    EnvError(EnvError),
     GetTemplateError(GetTemplateError),
     RenderError(RenderError),
 }
 
 impl std::error::Error for RenderTemplateError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+        match self {
+            RenderTemplateError::GetTemplateError(err) => Some(err),
+            RenderTemplateError::RenderError(err) => Some(err),
+        }
     }
 }
 
 impl std::fmt::Display for RenderTemplateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RenderTemplateError::EnvError(env_error) => {
-                write!(f, "failed to acquire environment {}", env_error)
-            }
             RenderTemplateError::GetTemplateError(get_template_error) => {
-                write!(f, "unable to get template from env {}", get_template_error)
+                write!(f, "unable to get template from env {get_template_error}")
             }
             RenderTemplateError::RenderError(render_error) => write!(
                 f,
-                "error in rendering with the provided context {}",
-                render_error
+                "error in rendering with the provided context {render_error}"
             ),
         }
-    }
-}
-
-impl From<EnvError> for RenderTemplateError {
-    fn from(value: EnvError) -> Self {
-        Self::EnvError(value)
     }
 }
 
@@ -136,24 +71,39 @@ impl From<RenderError> for RenderTemplateError {
 }
 
 #[derive(Debug)]
+pub struct CompileError(minijinja::Error);
+
+impl std::error::Error for CompileError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.0)
+    }
+}
+
+impl std::fmt::Display for CompileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug)]
+#[non_exhaustive]
 pub enum RenderTemplateStrError {
-    EnvError(EnvError),
+    CompileError(CompileError),
     RenderError(RenderError),
 }
 
 impl std::error::Error for RenderTemplateStrError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+        match self {
+            RenderTemplateStrError::CompileError(err) => Some(err),
+            RenderTemplateStrError::RenderError(err) => Some(err),
+        }
     }
 }
 
-impl From<EnvError> for RenderTemplateStrError {
-    fn from(value: EnvError) -> Self {
-        Self::EnvError(value)
+impl From<CompileError> for RenderTemplateStrError {
+    fn from(value: CompileError) -> Self {
+        Self::CompileError(value)
     }
 }
 
@@ -166,13 +116,12 @@ impl From<RenderError> for RenderTemplateStrError {
 impl std::fmt::Display for RenderTemplateStrError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RenderTemplateStrError::EnvError(env_error) => {
-                write!(f, "failed to acquire environment {}", env_error)
+            RenderTemplateStrError::CompileError(err) => {
+                write!(f, "failed to compile template {err}")
             }
             RenderTemplateStrError::RenderError(render_error) => write!(
                 f,
-                "error in rendering with the provided context {}",
-                render_error
+                "error in rendering with the provided context {render_error}"
             ),
         }
     }
@@ -183,17 +132,7 @@ pub struct RenderError(minijinja::Error);
 
 impl std::error::Error for RenderError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-}
-
-impl From<minijinja::Error> for RenderError {
-    fn from(value: minijinja::Error) -> Self {
-        Self(value)
+        Some(&self.0)
     }
 }
 
@@ -211,11 +150,12 @@ impl HandleBuilder {
     }
 
     pub fn build(self) -> Handle {
-        Handle(self.env)
+        Handle(Arc::new(self.env))
     }
 }
 
 impl Handle {
+    #[must_use]
     pub fn builder() -> HandleBuilder {
         HandleBuilder {
             env: Environment::new(),
@@ -227,11 +167,12 @@ impl Handle {
         context: C,
         template_file: &str,
     ) -> Result<String, RenderTemplateError> {
-        let template = self.0
+        let template = self
+            .0
             .get_template(template_file)
-            .map_err(|e| GetTemplateError(e))?;
+            .map_err(GetTemplateError)?;
 
-        Ok(template.render(context).map_err(|e| RenderError(e))?)
+        Ok(template.render(context).map_err(RenderError)?)
     }
 
     pub fn render_template_str<C: Into<minijinja::Value>>(
@@ -239,7 +180,7 @@ impl Handle {
         context: C,
         template: &str,
     ) -> Result<String, RenderTemplateStrError> {
-        let template = self.0.template_from_str(template).map_err(|e| EnvError(e))?;
-        Ok(template.render(context).map_err(|e| RenderError(e))?)
+        let template = self.0.template_from_str(template).map_err(CompileError)?;
+        Ok(template.render(context).map_err(RenderError)?)
     }
 }

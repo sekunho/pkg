@@ -1,12 +1,12 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::path::PathBuf;
 
 use deadpool::managed::QueueMode;
 use deadpool_sqlite::{
-    rusqlite, BuildError, ConfigError, CreatePoolError, Hook, HookError, Pool, PoolConfig, Timeouts,
+    rusqlite, BuildError, Hook, HookError, Pool, PoolConfig, Timeouts,
 };
 
 pub struct Handle {
-    pub write_pool: Mutex<Pool>,
+    pub write_pool: Pool,
     pub read_pool: Pool,
 }
 
@@ -18,43 +18,24 @@ pub struct HandleBuilder {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum CreateHandleError {
-    Pool(CreatePoolError),
-    Config(ConfigError),
     Build(BuildError),
 }
 
 impl std::error::Error for CreateHandleError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+        match self {
+            CreateHandleError::Build(err) => Some(err),
+        }
     }
 }
 
 impl std::fmt::Display for CreateHandleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CreateHandleError::Pool(create_pool_error) => {
-                write!(f, "could not create DB pool {}", create_pool_error)
-            }
-            CreateHandleError::Config(err) => write!(f, "could not create DB pool {}", err),
             CreateHandleError::Build(err) => write!(f, "could not create DB pool {}", err),
         }
-    }
-}
-
-impl From<CreatePoolError> for CreateHandleError {
-    fn from(err: CreatePoolError) -> Self {
-        Self::Pool(err)
-    }
-}
-
-impl From<ConfigError> for CreateHandleError {
-    fn from(err: ConfigError) -> Self {
-        Self::Config(err)
     }
 }
 
@@ -116,8 +97,8 @@ impl HandleBuilder {
             path: self.database,
             pool: Some(self.write_config),
         };
-        let mut read_pool = read_config.builder(deadpool_sqlite::Runtime::Tokio1)?;
-        let mut write_pool = write_config.builder(deadpool_sqlite::Runtime::Tokio1)?;
+        let mut read_pool = read_config.builder(deadpool_sqlite::Runtime::Tokio1).expect("infallible");
+        let mut write_pool = write_config.builder(deadpool_sqlite::Runtime::Tokio1).expect("infallible");
 
         if let Some(hook_fn) = self.hook_fn {
             read_pool = read_pool.post_create(Hook::async_fn(move |conn, _| {
@@ -144,7 +125,7 @@ impl HandleBuilder {
 
         Ok(Handle {
             read_pool,
-            write_pool: Mutex::new(write_pool),
+            write_pool,
         })
     }
 }
@@ -157,14 +138,12 @@ impl Handle {
     pub async fn get_read_conn(
         &self,
     ) -> Result<deadpool_sqlite::Connection, deadpool_sqlite::PoolError> {
-        let conn = self.read_pool.get().await?;
-        Ok(conn)
+        self.read_pool.get().await
     }
 
     pub async fn get_write_conn(
         &self,
     ) -> Result<deadpool_sqlite::Connection, deadpool_sqlite::PoolError> {
-        let conn = self.read_pool.get().await?;
-        Ok(conn)
+        self.write_pool.get().await
     }
 }

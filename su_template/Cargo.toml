@@ -10,5 +10,3 @@ version.workspace = true
 
 [dependencies]
 minijinja = { workspace = true }
-minijinja-autoreload = { workspace = true }
-serde = { workspace = true, features = ["derive"] }

@@ -1,23 +1,15 @@
 #![forbid(unsafe_code)]
-use std::{path::PathBuf, sync::Arc};
 
 use minijinja::Environment;
-use minijinja_autoreload::AutoReloader;
-use serde::Serialize;
 
 pub use minijinja::{context, Error};
 
 pub struct HandleBuilder {
     env: Environment<'static>,
-    watch_paths: Vec<PathBuf>,
-    fast_reload: bool,
 }
 
 #[derive(Clone)]
-pub enum Handle {
-    Static(Environment<'static>),
-    Autoreload(Arc<AutoReloader>),
-}
+pub struct Handle(Environment<'static>);
 
 #[derive(Debug)]
 pub struct TemplateError(minijinja::Error);
@@ -218,31 +210,8 @@ impl HandleBuilder {
         &mut self.env
     }
 
-    /// Watches the directories for any changes, and triggers the notifier.
-    pub fn set_watch_paths(mut self, paths: Vec<PathBuf>) -> Self {
-        self.watch_paths = paths;
-        self
-    }
-
-    pub fn set_fast_reload(mut self, fast_reload: bool) -> Self {
-        self.fast_reload = fast_reload;
-        self
-    }
-
-    pub fn build_autoreload(self) -> Handle {
-        let autoreloader = minijinja_autoreload::AutoReloader::new(move |notifier| {
-            for path in self.watch_paths.iter() {
-                notifier.watch_path(path, true);
-            }
-
-            notifier.set_fast_reload(self.fast_reload);
-            Ok(self.env.clone())
-        });
-        Handle::Autoreload(Arc::from(autoreloader))
-    }
-
-    pub fn build_static(self) -> Handle {
-        Handle::Static(self.env)
+    pub fn build(self) -> Handle {
+        Handle(self.env)
     }
 }
 
@@ -250,51 +219,27 @@ impl Handle {
     pub fn builder() -> HandleBuilder {
         HandleBuilder {
             env: Environment::new(),
-            watch_paths: Vec::new(),
-            fast_reload: false,
         }
     }
 
-    pub fn render_template<S: Serialize>(
+    pub fn render_template<C: Into<minijinja::Value>>(
         &self,
-        context: S,
+        context: C,
         template_file: &str,
     ) -> Result<String, RenderTemplateError> {
-        match self {
-            Handle::Static(env) => {
-                let template = env
-                    .get_template(template_file)
-                    .map_err(|e| GetTemplateError(e))?;
+        let template = self.0
+            .get_template(template_file)
+            .map_err(|e| GetTemplateError(e))?;
 
-                Ok(template.render(context).map_err(|e| RenderError(e))?)
-            }
-            Handle::Autoreload(ar) => {
-                let env = ar.acquire_env().unwrap();
-
-                let template = env
-                    .get_template(template_file)
-                    .map_err(|e| GetTemplateError(e))?;
-
-                Ok(template.render(context).map_err(|e| RenderError(e))?)
-            }
-        }
+        Ok(template.render(context).map_err(|e| RenderError(e))?)
     }
 
-    pub fn render_template_str<S: Serialize>(
+    pub fn render_template_str<C: Into<minijinja::Value>>(
         &self,
-        context: S,
+        context: C,
         template: &str,
     ) -> Result<String, RenderTemplateStrError> {
-        match self {
-            Handle::Static(env) => {
-                let template = env.template_from_str(template).map_err(|e| EnvError(e))?;
-                Ok(template.render(context).map_err(|e| RenderError(e))?)
-            }
-            Handle::Autoreload(ar) => {
-                let env = ar.acquire_env().map_err(|e| EnvError(e))?;
-                let template = env.template_from_str(template).unwrap();
-                Ok(template.render(context).map_err(|e| RenderError(e))?)
-            }
-        }
+        let template = self.0.template_from_str(template).map_err(|e| EnvError(e))?;
+        Ok(template.render(context).map_err(|e| RenderError(e))?)
     }
 }

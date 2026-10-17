@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use minijinja::Environment;
 
-pub use minijinja::{context, Error};
+pub use minijinja::{Error, context};
 
 pub struct HandleBuilder {
     env: Environment<'static>,

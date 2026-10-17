@@ -2,19 +2,25 @@ use std::path::PathBuf;
 
 use deadpool::managed::QueueMode;
 use deadpool_sqlite::{
-    rusqlite, BuildError, Hook, HookError, Pool, PoolConfig, Timeouts,
+    BuildError, Hook, HookError, Pool, PoolConfig, Timeouts,
+    rusqlite::{self, TransactionBehavior},
 };
 
 pub struct Handle {
-    pub write_pool: Pool,
-    pub read_pool: Pool,
+    read_pool: Pool,
+    write_pool: Pool,
 }
 
 pub struct HandleBuilder {
     database: PathBuf,
     write_config: PoolConfig,
     read_config: PoolConfig,
-    hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
+    read_hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
+    write_hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
+
+    // If enabled, it automatically sets the query_only to true for read connections,
+    // and sets BEGIN IMMEDIATE; for write connections.
+    strict: bool,
 }
 
 #[derive(Debug)]
@@ -34,7 +40,7 @@ impl std::error::Error for CreateHandleError {
 impl std::fmt::Display for CreateHandleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CreateHandleError::Build(err) => write!(f, "could not create DB pool {}", err),
+            CreateHandleError::Build(_) => write!(f, "could not create DB pool"),
         }
     }
 }
@@ -46,6 +52,7 @@ impl From<BuildError> for CreateHandleError {
 }
 
 impl HandleBuilder {
+    #[must_use]
     pub fn new(database: PathBuf) -> Self {
         let read_config = PoolConfig::default();
 
@@ -57,7 +64,9 @@ impl HandleBuilder {
             database,
             read_config,
             write_config,
-            hook_fn: None,
+            read_hook_fn: None,
+            write_hook_fn: None,
+            strict: true,
         }
     }
 
@@ -81,11 +90,22 @@ impl HandleBuilder {
         self.write_config.queue_mode = queue_mode;
     }
 
-    pub fn set_post_create(
+    pub fn set_read_post_create(
         &mut self,
         hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
     ) {
-        self.hook_fn = hook_fn
+        self.read_hook_fn = hook_fn;
+    }
+
+    pub fn set_write_post_create(
+        &mut self,
+        hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
+    ) {
+        self.write_hook_fn = hook_fn;
+    }
+
+    pub fn set_strict(&mut self, strict: bool) {
+        self.strict = strict
     }
 
     pub fn build(self) -> Result<Handle, CreateHandleError> {
@@ -97,10 +117,38 @@ impl HandleBuilder {
             path: self.database,
             pool: Some(self.write_config),
         };
-        let mut read_pool = read_config.builder(deadpool_sqlite::Runtime::Tokio1).expect("infallible");
-        let mut write_pool = write_config.builder(deadpool_sqlite::Runtime::Tokio1).expect("infallible");
+        let mut read_pool = read_config
+            .builder(deadpool_sqlite::Runtime::Tokio1)
+            .expect("infallible");
 
-        if let Some(hook_fn) = self.hook_fn {
+        let mut write_pool = write_config
+            .builder(deadpool_sqlite::Runtime::Tokio1)
+            .expect("infallible");
+
+        if self.strict {
+            read_pool = read_pool.post_create(Hook::async_fn(move |conn, _| {
+                Box::pin(async move {
+                    conn.interact(|conn| conn.pragma_update(None, "query_only", true))
+                        .await
+                        .map_err(|e| HookError::message(format!("{e}")))?
+                        .map_err(|e| HookError::message(format!("{e}")))
+                })
+            }));
+
+            write_pool = write_pool.post_create(Hook::async_fn(move |conn, _| {
+                Box::pin(async move {
+                    conn.interact(|conn| -> Result<(), rusqlite::Error> {
+                        conn.set_transaction_behavior(TransactionBehavior::Immediate);
+                        Ok(())
+                    })
+                    .await
+                    .map_err(|e| HookError::message(format!("{e}")))?
+                    .map_err(|e| HookError::message(format!("{e}")))
+                })
+            }));
+        }
+
+        if let Some(hook_fn) = self.read_hook_fn {
             read_pool = read_pool.post_create(Hook::async_fn(move |conn, _| {
                 Box::pin(async move {
                     conn.interact(move |conn| hook_fn(conn))
@@ -109,7 +157,9 @@ impl HandleBuilder {
                         .map_err(|e| HookError::message(format!("{e}")))
                 })
             }));
+        }
 
+        if let Some(hook_fn) = self.write_hook_fn {
             write_pool = write_pool.post_create(Hook::async_fn(move |conn, _| {
                 Box::pin(async move {
                     conn.interact(move |conn| hook_fn(conn))
@@ -131,6 +181,7 @@ impl HandleBuilder {
 }
 
 impl Handle {
+    #[must_use]
     pub fn builder(database: PathBuf) -> HandleBuilder {
         HandleBuilder::new(database)
     }

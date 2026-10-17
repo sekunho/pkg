@@ -3,12 +3,12 @@ resolver = "2"
 members = ["su_*"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/sekunho/pkg"
 include = ["../../LICENSE", "**/*.rs", "Cargo.toml"]
 license = "BSD-3-Clause"
 repository = "https://github.com/sekunho/pkg"
-rust-version = "1.82"
+rust-version = "1.85"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]

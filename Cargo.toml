@@ -3,12 +3,12 @@ resolver = "2"
 members = ["su_*"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 homepage = "https://github.com/sekunho/pkg"
 include = ["../../LICENSE", "**/*.rs", "Cargo.toml"]
 license = "BSD-3-Clause"
 repository = "https://github.com/sekunho/pkg"
-rust-version = "1.82"
+rust-version = "1.85"
 version = "0.1.0-alpha"
 
 [workspace.dependencies]
@@ -18,8 +18,7 @@ su_sqlite = { path = "su_sqlite", version = "0.1.0-alpha" }
 su_template = { path = "su_template", version = "0.1.0-alpha" }
 
 # Templating
-minijinja = { version = "2.12", default-features = false, features = ["serde"] }
-minijinja-autoreload.version = "2.12"
+minijinja = { version = "3.0", default-features = false, features = [] }
 
 # Serialization
 serde.version = "1.0"

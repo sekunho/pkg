@@ -38,7 +38,20 @@ impl Debug for Config {
             None
         };
 
-        write!(f, "Config {{ name: {:?}, host: {:?}, port: {:?}, user: {:?}, pool_size: {:?}, password: {:?}, password_file: {:?}, ca_cert_file: {:?}, client_cert_file: {:?}, client_key_file: {:?} }}", name, host, port, user, pool_size, password, password_file, ca_cert_file, client_cert_file, client_key_file)
+        write!(
+            f,
+            "Config {{ name: {:?}, host: {:?}, port: {:?}, user: {:?}, pool_size: {:?}, password: {:?}, password_file: {:?}, ca_cert_file: {:?}, client_cert_file: {:?}, client_key_file: {:?} }}",
+            name,
+            host,
+            port,
+            user,
+            pool_size,
+            password,
+            password_file,
+            ca_cert_file,
+            client_cert_file,
+            client_key_file
+        )
     }
 }
 

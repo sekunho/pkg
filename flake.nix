@@ -2,7 +2,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     crane.url = "github:ipetkov/crane";
 
     fenix = {
@@ -12,10 +11,9 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, pre-commit-hooks, fenix, crane }:
+  outputs = { self, nixpkgs, flake-utils, fenix, crane }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (system:
       let
-        version = "0.1.0-alpha";
         pkgs = import nixpkgs { inherit system; overlays = [ ]; };
 
         craneLib = (crane.mkLib pkgs).overrideToolchain

@@ -1,5 +1,5 @@
 /// Generates the value rows of an INSERT query. Helper for the lazy (like me).
-/// The minimum is 1. If `additional_rows = 0`, it'll still generate 1 value row.
+/// The minimum is 1. If `rows = 0`, it'll still generate 1 value row.
 ///
 /// ## Example
 ///
@@ -23,13 +23,14 @@
 ///     VALUES (?, ?, ?), (?, ?, ?)
 ///   RETURNING fizz;
 ///  ```
+#[must_use]
 pub fn generate_value_rows(rows: usize, columns: usize) -> String {
     let columns = vec!["?"; columns].join(", ");
-    vec![format!("({columns})"); rows + 1].join(", ")
+    vec![format!("({columns})"); rows.max(1)].join(", ")
 }
 
 /// Generates the value rows of an INSERT query. Helper for the lazy (like me).
-/// The minimum is 1. If `additional_rows = 0`, it'll still generate 1 value row.
+/// The minimum is 1. If `rows = 0`, it'll still generate 1 value row.
 ///
 /// ## Example
 ///
@@ -43,7 +44,7 @@ pub fn generate_value_rows(rows: usize, columns: usize) -> String {
 ///  we generate 2 rows and 3 columns.
 ///
 ///  ```sql
-///  (:fizz, :bar, :baz), (:fizz, :bar, :baz)
+///  (:fizz_0, :bar_0, :baz_0), (:fizz_1, :bar_1, :baz_1)
 ///  ```
 ///
 ///  Which can be later stitched with `format!(include_str!("insert.sql", values = values))`,
@@ -51,12 +52,23 @@ pub fn generate_value_rows(rows: usize, columns: usize) -> String {
 ///
 ///  ```sql
 ///   INSERT INTO foo(fizz, bar, baz)
-///     VALUES (:fizz, :bar, :baz), (:fizz, :bar, :baz)
+///     VALUES (:fizz_0, :bar_0, :baz_0), (:fizz_1, :bar_1, :baz_1)
 ///   RETURNING fizz;
 ///  ```
+#[must_use]
+pub fn generate_custom_value_rows(rows: usize, columns: &[&str]) -> String {
+    (0..rows.max(1))
+        .map(|idx| {
+            let columns = columns
+                .iter()
+                .map(move |col| format!("{col}_{idx}"))
+                .collect::<Vec<_>>()
+                .join(", ");
 
-pub fn generate_custom_value_rows(additional_rows: usize, columns: &[&str]) -> String {
-    vec![format!("({})", columns.join(", ")); additional_rows + 1].join(", ")
+            format!("({columns})")
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 #[cfg(test)]
@@ -66,37 +78,27 @@ mod tests {
     #[test]
     fn assert_multiple_positional_values() {
         let values = generate_value_rows(3, 3);
-        assert!(
-            values == "(?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)",
-            "{}",
-            format!("actual: {values}")
-        );
+        assert_eq!(values, "(?, ?, ?), (?, ?, ?), (?, ?, ?)");
     }
 
     #[test]
     fn assert_generates_at_least_1_positional_value() {
         let values = generate_value_rows(0, 3);
-        assert!(values == "(?, ?, ?)", "{}", format!("actual: {values}"));
+        assert_eq!(values, "(?, ?, ?)");
     }
 
     #[test]
     fn assert_multiple_custom_values() {
         let values = generate_custom_value_rows(3, &[":foo", ":bar", ":baz"]);
-        assert!(
-            values
-                == "(:foo, :bar, :baz), (:foo, :bar, :baz), (:foo, :bar, :baz), (:foo, :bar, :baz)",
-            "{}",
-            format!("actual: {values}")
+        assert_eq!(
+            values,
+            "(:foo_0, :bar_0, :baz_0), (:foo_1, :bar_1, :baz_1), (:foo_2, :bar_2, :baz_2)"
         );
     }
 
     #[test]
     fn assert_generates_at_least_1_custom_value() {
         let values = generate_custom_value_rows(0, &[":foo", ":bar", ":baz"]);
-        assert!(
-            values == "(:foo, :bar, :baz)",
-            "{}",
-            format!("actual: {values}")
-        );
+        assert_eq!(values, "(:foo_0, :bar_0, :baz_0)");
     }
 }

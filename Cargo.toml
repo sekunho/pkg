@@ -17,31 +17,13 @@ su_postgres = { path = "su_postgres", version = "0.1.0-alpha" }
 su_sqlite = { path = "su_sqlite", version = "0.1.0-alpha" }
 su_template = { path = "su_template", version = "0.1.0-alpha" }
 
-# Templating
-minijinja = { version = "3.0", default-features = false, features = [] }
-
-# Serialization
-serde.version = "1.0"
-serde_json = "1.0"
-
-# DB (postgres)
-tokio-postgres.version = "0.7"
-postgres-types.version = "0.2"
-deadpool-postgres.version = "0.14"
-postgres-openssl.version = "0.5"
-
 # DB (sqlite)
 deadpool-sqlite = { version = "0.14", default-features = false, features = ["rt_tokio_1"] }
-deadpool = { version = "0.13", default-features = false, features = ["managed"] }
-
-openssl.version = "0.10"
 
 # Async
-async-trait.version = "0.1"
-tokio.version = "1.44"
+tokio.version = "1.53"
 
 # Misc. data types
-config.version = "0.15"
 time.version = "0.3"
 
 [workspace.lints.clippy]

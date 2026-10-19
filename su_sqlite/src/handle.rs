@@ -19,7 +19,7 @@ pub struct HandleBuilder {
     write_hook_fn: Option<fn(&rusqlite::Connection) -> Result<(), rusqlite::Error>>,
 
     // If enabled, it automatically sets the query_only to true for read connections,
-    // and sets BEGIN IMMEDIATE; for write connections.
+    // and sets BEGIN IMMEDIATE; and foreign_keys = ON for write connections.
     strict: bool,
 }
 
@@ -105,7 +105,7 @@ impl HandleBuilder {
     }
 
     pub fn set_strict(&mut self, strict: bool) {
-        self.strict = strict
+        self.strict = strict;
     }
 
     pub fn build(self) -> Result<Handle, CreateHandleError> {
@@ -139,7 +139,7 @@ impl HandleBuilder {
                 Box::pin(async move {
                     conn.interact(|conn| -> Result<(), rusqlite::Error> {
                         conn.set_transaction_behavior(TransactionBehavior::Immediate);
-                        Ok(())
+                        conn.pragma_update(None, "foreign_keys", true)
                     })
                     .await
                     .map_err(|e| HookError::message(format!("{e}")))?

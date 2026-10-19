@@ -12,3 +12,4 @@ feature requests beyond my own use cases.
 hood.
 - `su_postgres`: A `postgresql` adapter
 - `su_sqlite`: An SQLite adapter
+- `su_auth`: An experimental auth library for SQLite3

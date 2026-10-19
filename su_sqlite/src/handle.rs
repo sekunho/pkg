@@ -105,7 +105,7 @@ impl HandleBuilder {
     }
 
     pub fn set_strict(&mut self, strict: bool) {
-        self.strict = strict
+        self.strict = strict;
     }
 
     pub fn build(self) -> Result<Handle, CreateHandleError> {

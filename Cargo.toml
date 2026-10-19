@@ -20,11 +20,5 @@ su_template = { path = "su_template", version = "0.1.0-alpha" }
 # DB (sqlite)
 deadpool-sqlite = { version = "0.14", default-features = false, features = ["rt_tokio_1"] }
 
-# Async
-tokio.version = "1.53"
-
-# Misc. data types
-time.version = "0.3"
-
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }

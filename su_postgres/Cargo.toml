@@ -9,21 +9,12 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-config = "0.15"
+config = { version = "0.15", default-features = false }
 
 ## DB
 tokio-postgres = "0.7"
-postgres-types = "0.2"
 deadpool-postgres = "0.14"
 postgres-openssl = "0.5"
 openssl = "0.10"
 
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-## Types
-time.workspace = true
-
-## Async
-tokio.workspace = true
-async-trait = "0.1"

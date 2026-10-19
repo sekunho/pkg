@@ -16,18 +16,18 @@ axum-core = "0.5"
 http = "1"
 axum-extra = { version = "0.12", default-features = false, features = ["cookie"] }
 
-tokio = { workspace = true, features = ["rt"] }
+tokio = { version = "1.53", features = ["rt"] }
 
 sha2 = "0.11"
 base64 = "0.23"
 
 rusqlite = { version = "0.40", features = ["time"] }
-time.workspace = true
+time = "0.3"
 argon2 = "0.6"
 rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { version = "1.53", features = ["macros", "rt"] }
 
 [lints]
 workspace = true

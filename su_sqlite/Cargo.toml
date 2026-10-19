@@ -10,7 +10,7 @@ version.workspace = true
 
 [dependencies]
 deadpool-sqlite.workspace = true
-deadpool.workspace = true
+deadpool = { version = "0.13", default-features = false, features = ["managed"] }
 
 [lints]
 workspace = true

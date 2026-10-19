@@ -9,7 +9,7 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-minijinja = { workspace = true }
+minijinja = { version = "3.0", default-features = false, features = ["serde"] }
 
 [lints]
 workspace = true

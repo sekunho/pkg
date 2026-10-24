@@ -36,7 +36,7 @@ impl<B: AuthnBackend> AuthHandle<B> {
 
     pub async fn login(&self, creds: B::Credentials) -> Result<(), LoginError<B>> {
         if self.inner.lock().await.session.is_some() {
-            return Ok(())
+            return Ok(());
         }
 
         let user = self

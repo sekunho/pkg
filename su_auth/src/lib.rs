@@ -30,17 +30,17 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     #[cfg(feature = "verification-code")]
     type Verification: crate::verification::AuthVerification<Self>;
 
-    type AuthenticateError: Error + Send + Sync;
-    type GetUserError: Error + Send + Sync;
+    type AuthenticateError: Error + Clone + Send + Sync + 'static;
+    type GetUserError: Error + Debug + Clone + Send + Sync + 'static;
 
-    type CreateSessionError: Error + Send + Sync;
-    type UpdateSessionError: Error + Send + Sync;
-    type DeleteSessionError: Error + Send + Sync;
-    type ValidateSessionError: Error + Send + Sync;
+    type CreateSessionError: Error + Send + Sync + 'static;
+    type UpdateSessionError: Error + Send + Sync + 'static;
+    type DeleteSessionError: Error + Send + Sync + 'static;
+    type ValidateSessionError: Error + Send + Sync + 'static;
 
-    type CreateVerificationCodeError: Error + Send + Sync;
-    type UpdateVerificationCodeError: Error + Send + Sync;
-    type DeleteVerificationCodeError: Error + Send + Sync;
+    type CreateVerificationCodeError: Error + Send + Sync + 'static;
+    type UpdateVerificationCodeError: Error + Send + Sync + 'static;
+    type DeleteVerificationCodeError: Error + Send + Sync + 'static;
 
     fn authenticate(
         &self,

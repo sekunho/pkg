@@ -9,25 +9,31 @@ rust-version.workspace = true
 version.workspace = true
 
 [dependencies]
-su_sqlite.workspace = true
-deadpool-sqlite.workspace = true
-
+# Web
 axum-core = "0.5"
-http = "1"
+http = { version = "1", default-features = false, features = [] }
 axum-extra = { version = "0.12", default-features = false, features = ["cookie"] }
 
-tokio = { version = "1.53", features = ["rt"] }
+tokio = { version = "1.53", default-features = false, features = ["rt"] }
 
+# Encoding stuff
 sha2 = "0.11"
-base64 = "0.23"
+base64 = { version = "0.23", default-features = false, features = ["std"] }
+argon2 = { version = "0.6", default-features = false, features = ["password-hash", "getrandom", "alloc"], optional = true }
 
-rusqlite = { version = "0.40", features = ["time"] }
-time = "0.3"
-argon2 = "0.6"
+time = { version = "0.3", default-features = false }
 rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
 
+# DB
+rusqlite = { version = "0.40", default-features = false, features = [], optional = true }
+
 [dev-dependencies]
-tokio = { version = "1.53", features = ["macros", "rt"] }
+tokio = { version = "1.53", default-features = false, features = ["rt"] }
 
 [lints]
 workspace = true
+
+[features]
+rusqlite = ["dep:rusqlite"]
+argon2 = ["dep:argon2"]
+verification-code = []

@@ -2,15 +2,13 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
-use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 
-use crate::model::session::SessionToken;
-
-pub const COOKIE_SESSION_KEY: &str = "__Host-session";
+use crate::session::SessionToken;
 
 #[must_use]
-pub fn create_session_cookie(session_token: SessionToken) -> Cookie<'static> {
-    let mut cookie = Cookie::build(COOKIE_SESSION_KEY)
+pub fn create_session_cookie(name: &'static str, session_token: SessionToken) -> Cookie<'static> {
+    let mut cookie = Cookie::build(name)
         .same_site(SameSite::Lax)
         .path("/")
         .secure(true)
@@ -21,9 +19,9 @@ pub fn create_session_cookie(session_token: SessionToken) -> Cookie<'static> {
     cookie
 }
 
-pub fn invalidate(jar: CookieJar) -> CookieJar {
+pub fn invalidate(jar: CookieJar, name: &'static str) -> CookieJar {
     jar.remove(
-        Cookie::build(COOKIE_SESSION_KEY)
+        Cookie::build(name)
             .path("/")
             .same_site(SameSite::Lax)
             .secure(true)

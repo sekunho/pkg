@@ -1,8 +1,8 @@
 # `axum` integration
 
-`su_auth` already comes with `axum` integration right out of the box.
+`su_auth` already comes with `axum` integration right out of the box
 
-If you want to gate a particular endpoint handler function behind a verified user, you only need to use the `VerifiedUser` extractor:
+## Extracting session manager
 
 ```rust
 use axum::response::Html;

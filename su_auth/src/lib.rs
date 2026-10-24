@@ -45,7 +45,7 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     fn authenticate(
         &self,
         credentials: Self::Credentials,
-    ) -> impl Future<Output = Result<Option<Self::User>, Self::AuthenticateError>> + Send;
+    ) -> impl Future<Output = Result<Self::User, Self::AuthenticateError>> + Send;
 
     fn get_user(
         &self,
@@ -71,7 +71,7 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     fn refresh_session(
         &self,
         token: &SessionTokenHash,
-    ) -> impl Future<Output = Result<Option<Self::Session>, Self::UpdateSessionError>>;
+    ) -> impl Future<Output = Result<Option<Self::Session>, Self::UpdateSessionError>> + Send;
 
     fn get_user_from_session(
         &self,

@@ -4,6 +4,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     AuthnBackend,
+    error::LoginError,
     session::{AuthSession as _, SessionToken, SessionTokenHash},
 };
 
@@ -33,11 +34,36 @@ impl<B: AuthnBackend> AuthHandle<B> {
         self.inner.lock().await.clone().user
     }
 
+    pub async fn login(&self, creds: B::Credentials) -> Result<(), LoginError<B>> {
+        if self.inner.lock().await.session.is_some() {
+            return Ok(())
+        }
+
+        let user = self
+            .backend()
+            .authenticate(creds)
+            .await
+            .map_err(LoginError::Authenticate)?;
+
+        let session = B::Session::new(&user);
+
+        let session = self
+            .backend()
+            .create_session(session)
+            .await
+            .map_err(LoginError::CreateSession)?;
+
+        let mut inner = self.inner.lock().await;
+        inner.session = Some(session);
+        inner.user = Some(user);
+        Ok(())
+    }
+
     pub async fn refresh_session(&self) -> Result<(), B::UpdateSessionError> {
         let mut inner = self.inner.lock().await;
         let token_hash = inner.session.as_mut().map(|session| session.token_hash());
 
-        if let Some(token_hash) =  token_hash {
+        if let Some(token_hash) = token_hash {
             inner.session = self.backend.refresh_session(&token_hash).await?;
         }
         Ok(())

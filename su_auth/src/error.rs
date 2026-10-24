@@ -4,6 +4,8 @@ use axum_core::response::{IntoResponse, Response};
 use axum_extra::extract::CookieJar;
 use http::StatusCode;
 
+use crate::AuthnBackend;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AuthFailure {
@@ -105,4 +107,9 @@ impl std::error::Error for AuthSessionError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
     }
+}
+
+pub enum LoginError<Backend: AuthnBackend> {
+    Authenticate(Backend::AuthenticateError),
+    CreateSession(Backend::CreateSessionError),
 }

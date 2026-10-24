@@ -9,7 +9,7 @@ use crate::{AuthnBackend, user::UserId};
 pub trait AuthSession<Backend: AuthnBackend>: Debug + Clone {
     fn token_hash(&self) -> SessionTokenHash;
     fn user_id(&self) -> UserId<Backend>;
-    fn new() -> Self;
+    fn new(user: &Backend::User) -> Self;
 }
 
 #[derive(Clone, Copy, Debug)]

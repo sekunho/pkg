@@ -32,12 +32,13 @@ pub struct AuthSessionRefreshService<S, Backend: AuthnBackend> {
 impl<S, B, Backend> Service<Request<B>> for AuthSessionRefreshService<S, Backend>
 where
     Backend: AuthnBackend + Send + Sync + 'static,
-    S: Service<Request<B>> + Clone + 'static,
-    B: 'static
+    S: Service<Request<B>> + Clone + 'static + Send,
+    S::Future: Send,
+    B: 'static + Send,
 {
     type Response = S::Response;
     type Error = S::Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(
         &mut self,

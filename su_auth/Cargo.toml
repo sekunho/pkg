@@ -26,9 +26,11 @@ rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
 
 # DB
 rusqlite = { version = "0.40", default-features = false, features = [], optional = true }
+tower-layer = "0.3.3"
+tower-service = "0.3.3"
 
 [dev-dependencies]
-tokio = { version = "1.53", default-features = false, features = ["rt"] }
+tokio = { version = "1.53", default-features = false, features = ["rt", "sync"] }
 
 [lints]
 workspace = true

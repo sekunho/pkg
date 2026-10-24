@@ -1,12 +1,15 @@
+use std::fmt::Debug;
+
 use axum_extra::extract::cookie::Cookie;
 use base64::{DecodeError, Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use sha2::Digest as _;
 
 use crate::{AuthnBackend, user::UserId};
 
-pub trait AuthSession<Backend: AuthnBackend> {
+pub trait AuthSession<Backend: AuthnBackend>: Debug + Clone {
     fn token_hash(&self) -> SessionTokenHash;
     fn user_id(&self) -> UserId<Backend>;
+    fn new() -> Self;
 }
 
 #[derive(Clone, Copy, Debug)]

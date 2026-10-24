@@ -12,6 +12,7 @@ pub mod argon2;
 pub mod auth;
 pub mod cookie;
 pub mod error;
+pub mod middleware;
 pub mod password;
 pub mod session;
 pub mod user;
@@ -24,7 +25,7 @@ pub mod extract;
 pub trait AuthnBackend: Debug + Clone + Send + Sync {
     type User: AuthUser<Self>;
     type Credentials: Send + Sync;
-    type Session: AuthSession<Self>;
+    type Session: AuthSession<Self> + Send + Sync;
 
     #[cfg(feature = "verification-code")]
     type Verification: crate::verification::AuthVerification<Self>;
@@ -67,9 +68,9 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
         token: SessionTokenHash,
     ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
 
-    fn update_session(
+    fn refresh_session(
         &self,
-        session: &Self::Session,
+        token: &SessionTokenHash,
     ) -> impl Future<Output = Result<Option<Self::Session>, Self::UpdateSessionError>>;
 
     fn get_user_from_session(

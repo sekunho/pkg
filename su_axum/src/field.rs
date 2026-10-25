@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, fmt::Display, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, error::Error, fmt::Display, str::FromStr};
 
 use axum_core::response::IntoResponse;
 use http::StatusCode;
@@ -109,12 +109,9 @@ impl<'t> FieldData<'t> {
     }
 }
 
-impl<'t, B> From<&'t B> for FieldData<'t>
-where
-    B: AsRef<[u8]> + 't,
-{
-    fn from(bytes: &'t B) -> Self {
-        let f = form_urlencoded::parse(bytes.as_ref());
+impl<'t> From<&'t [u8]> for FieldData<'t> {
+    fn from(bytes: &'t [u8]) -> Self {
+        let f = form_urlencoded::parse(bytes);
         f.fold(FieldData::new(), |mut f: FieldData<'t>, (k, v)| {
             match f.0.get_mut(&k) {
                 Some(vals) => vals.push(v),
@@ -130,9 +127,9 @@ where
 #[derive(Debug, Clone)]
 pub struct FieldErrors(pub Vec<(&'static str, FieldError)>);
 
-impl Default for FieldErrors {
-    fn default() -> Self {
-        Self(Default::default())
+impl Error for FieldErrors {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
     }
 }
 

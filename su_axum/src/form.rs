@@ -46,7 +46,7 @@ where
             })?;
 
         let bytes = Bytes::from_request(req, state).await?;
-        let data = FieldData::from(&bytes);
+        let data = FieldData::from(bytes.as_ref());
         let fields = Fields::new(&data, FieldErrors::new());
 
         match T::deserialize(fields) {
@@ -63,7 +63,10 @@ where
                     })
                     .collect();
 
-                Err(FormRejection::InvalidBody { errors, raw_form })
+                Err(FormRejection::InvalidBody {
+                    errors,
+                    raw_form,
+                })
             }
         }
     }
@@ -94,7 +97,7 @@ impl std::error::Error for FormRejection {
         match self {
             FormRejection::Bytes(err) => Some(err),
             FormRejection::InvalidFormContentType => None,
-            FormRejection::InvalidBody { .. } => None,
+            FormRejection::InvalidBody { errors, .. } => Some(errors),
         }
     }
 }

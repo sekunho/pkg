@@ -36,7 +36,7 @@ impl Display for QueryRejection {
 impl std::error::Error for QueryRejection {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            QueryRejection::InvalidQueries { .. } => None,
+            QueryRejection::InvalidQueries(errors) => Some(errors),
         }
     }
 }
@@ -60,7 +60,7 @@ where
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let bytes = parts.uri.query().unwrap_or_default().as_bytes();
-        let data = FieldData::from(&bytes);
+        let data = FieldData::from(bytes);
         let fields = Fields::new(&data, FieldErrors::new());
         let query = T::deserialize(fields).map(|query| Query(query))?;
         Ok(query)

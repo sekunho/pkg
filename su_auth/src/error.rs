@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use axum_core::response::{IntoResponse, Response};
-use axum_extra::extract::CookieJar;
 use http::StatusCode;
 
 use crate::AuthnBackend;
@@ -17,7 +16,8 @@ pub enum AuthFailure {
 
 pub struct AuthRejection {
     pub failure: AuthFailure,
-    pub jar: Option<CookieJar>,
+    #[cfg(feature = "cookie")]
+    pub jar: Option<axum_extra::extract::cookie::CookieJar>,
 }
 
 impl AuthRejection {
@@ -25,6 +25,7 @@ impl AuthRejection {
     pub fn no_session() -> Self {
         Self {
             failure: AuthFailure::NoSession,
+            #[cfg(feature = "cookie")]
             jar: None,
         }
     }
@@ -33,6 +34,7 @@ impl AuthRejection {
     pub fn internal() -> Self {
         Self {
             failure: AuthFailure::Internal,
+            #[cfg(feature = "cookie")]
             jar: None,
         }
     }
@@ -41,12 +43,14 @@ impl AuthRejection {
     pub fn invalid_session() -> Self {
         Self {
             failure: AuthFailure::InvalidSession,
+            #[cfg(feature = "cookie")]
             jar: None,
         }
     }
 
+    #[cfg(feature = "cookie")]
     #[must_use]
-    pub fn set_cookie_jar(mut self, jar: CookieJar) -> Self {
+    pub fn set_cookie_jar(mut self, jar: axum_extra::extract::cookie::CookieJar) -> Self {
         self.jar = Some(jar);
         self
     }
@@ -61,6 +65,7 @@ impl IntoResponse for AuthRejection {
         };
 
         let mut res = match self {
+            #[cfg(feature = "cookie")]
             Self { jar: Some(jar), .. } => (status, jar).into_response(),
             _ => (status).into_response(),
         };
@@ -75,6 +80,7 @@ impl From<AuthSessionError> for AuthRejection {
         match err {
             AuthSessionError::MissingLayer => AuthRejection {
                 failure: AuthFailure::Internal,
+                #[cfg(feature = "cookie")]
                 jar: None,
             },
         }

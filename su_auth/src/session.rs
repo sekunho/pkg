@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use axum_extra::extract::cookie::Cookie;
+#[cfg(feature = "cookie")]
 use base64::{DecodeError, Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use sha2::Digest as _;
 
@@ -48,10 +48,11 @@ impl AsRef<[u8]> for SessionToken {
     }
 }
 
-impl<'t> TryFrom<&Cookie<'t>> for SessionToken {
+#[cfg(feature = "cookie")]
+impl<'t> TryFrom<&axum_extra::extract::cookie::Cookie<'t>> for SessionToken {
     type Error = DecodeError;
 
-    fn try_from(cookie: &Cookie<'t>) -> Result<Self, Self::Error> {
+    fn try_from(cookie: &axum_extra::extract::cookie::Cookie<'t>) -> Result<Self, Self::Error> {
         let token = URL_SAFE_NO_PAD.decode(cookie.value())?;
         Ok(SessionToken(token))
     }

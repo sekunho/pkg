@@ -1,13 +1,8 @@
 use axum_core::extract::{FromRequestParts, OptionalFromRequestParts};
-use axum_extra::extract::CookieJar;
 use http::request::Parts;
 
 use crate::{
-    AuthnBackend,
-    auth::AuthHandle,
-    error::{AuthFailure, AuthRejection, AuthSessionError},
-    session::SessionToken,
-    user::CurrentUser,
+    AuthnBackend, auth::AuthHandle, error::{AuthFailure, AuthRejection, AuthSessionError}, session::{AuthSession as _}, user::CurrentUser,
 };
 
 impl<S, Backend> FromRequestParts<S> for AuthHandle<Backend>
@@ -39,21 +34,18 @@ where
     type Rejection = AuthRejection;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let jar = CookieJar::from_request_parts(parts, state)
-            .await
-            .expect("infallible");
+        let session_handle = AuthHandle::<Backend>::from_request_parts(parts, state).await?;
+        let session = &session_handle.inner.lock().await.session;
+        if session.is_none() {
+            return Err(AuthRejection::no_session())
+        }
 
-        let session = AuthHandle::<Backend>::from_request_parts(parts, state).await?;
+        let session = session_handle.inner.lock().await.session.clone();
+        let token_hash = session.unwrap().token_hash();
 
-        let token = jar
-            .get(session.session_name())
-            .ok_or(AuthRejection::no_session())
-            .and_then(|cookie| {
-                SessionToken::try_from(cookie).map_err(|_err| AuthRejection::invalid_session())
-            })?;
-
-        let user = session
-            .get_user(&token)
+        let user = session_handle
+            .backend()
+            .get_user_from_session(token_hash)
             .await
             .map_err(|_| AuthRejection::internal())?;
 

@@ -12,7 +12,9 @@ version.workspace = true
 # Web
 axum-core = "0.5"
 http = { version = "1", default-features = false, features = [] }
-axum-extra = { version = "0.12", default-features = false, features = ["cookie"] }
+axum-extra = { version = "0.12", default-features = false, features = ["cookie"], optional = true }
+tower-layer = { version = "0.3", default-features = false, features = [], optional = true }
+tower-service = { version = "0.3", default-features = false, features = [], optional = true }
 
 tokio = { version = "1.53", default-features = false, features = ["rt", "sync"] }
 
@@ -21,13 +23,10 @@ sha2 = "0.11"
 base64 = { version = "0.23", default-features = false, features = ["std"] }
 argon2 = { version = "0.6", default-features = false, features = ["password-hash", "getrandom", "alloc"], optional = true }
 
-time = { version = "0.3", default-features = false }
-rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
+time = { version = "0.3", default-features = false, optional = true }
 
 # DB
 rusqlite = { version = "0.40", default-features = false, features = [], optional = true }
-tower-layer = "0.3.3"
-tower-service = "0.3.3"
 
 [dev-dependencies]
 tokio = { version = "1.53", default-features = false, features = ["rt"] }
@@ -39,3 +38,5 @@ workspace = true
 rusqlite = ["dep:rusqlite"]
 argon2 = ["dep:argon2"]
 verification-code = []
+middleware = ["dep:tower-layer", "dep:tower-service"]
+cookie = ["dep:axum-extra", "dep:time"]

@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::Debug;
 
 use crate::{
-    session::{AuthSession, SessionTokenHash},
+    session::{AuthSession, SessionToken, SessionTokenHash},
     user::{AuthUser, UserId},
 };
 
@@ -10,9 +10,15 @@ use crate::{
 pub mod argon2;
 
 pub mod auth;
+
+#[cfg(feature = "cookie")]
 pub mod cookie;
+
 pub mod error;
+
+#[cfg(feature = "middleware")]
 pub mod middleware;
+
 pub mod password;
 pub mod session;
 pub mod user;
@@ -56,6 +62,8 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
         &self,
         token: SessionTokenHash,
     ) -> impl Future<Output = Result<(), Self::ValidateSessionError>> + Send;
+
+    fn generate_session_token() -> SessionToken;
 
     fn create_session(
         &self,

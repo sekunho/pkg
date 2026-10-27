@@ -2,7 +2,11 @@ use axum_core::extract::{FromRequestParts, OptionalFromRequestParts};
 use http::request::Parts;
 
 use crate::{
-    AuthnBackend, auth::AuthHandle, error::{AuthFailure, AuthRejection, AuthSessionError}, session::{AuthSession as _}, user::CurrentUser,
+    AuthnBackend,
+    auth::AuthHandle,
+    error::{AuthFailure, AuthRejection, AuthSessionError},
+    session::AuthSession as _,
+    user::CurrentUser,
 };
 
 impl<S, Backend> FromRequestParts<S> for AuthHandle<Backend>
@@ -37,7 +41,7 @@ where
         let session_handle = AuthHandle::<Backend>::from_request_parts(parts, state).await?;
         let session = &session_handle.inner.lock().await.session;
         if session.is_none() {
-            return Err(AuthRejection::no_session())
+            return Err(AuthRejection::no_session());
         }
 
         let session = session_handle.inner.lock().await.session.clone();

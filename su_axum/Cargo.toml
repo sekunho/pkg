@@ -1,0 +1,12 @@
+[package]
+name = "su_axum"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[dependencies]
+axum-core = { version = "0.5", default-features = false }
+bytes = { version = "1.12", default-features = false }
+http = { version = "1.5", default-features = false }
+mime = { version = "0.3", default-features = false }
+form_urlencoded = { version = "1.2", default-features = false, features = ["alloc"] }

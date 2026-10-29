@@ -10,13 +10,13 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct AuthHandle<Backend: AuthnBackend> {
-    pub(crate) session_name: &'static str,
+    pub(crate) session_name: String,
     pub(crate) backend: Backend,
-    pub(crate) inner: Arc<Mutex<Inner<Backend>>>,
+    pub(crate) session_data: Arc<Mutex<SessionData<Backend>>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct Inner<B: AuthnBackend> {
+pub struct SessionData<B: AuthnBackend> {
     pub(crate) user: Option<B::User>,
     pub(crate) session: Option<B::Session>,
 }
@@ -27,16 +27,16 @@ impl<B: AuthnBackend> AuthHandle<B> {
     }
 
     pub fn session_name(&self) -> &str {
-        self.session_name
+        self.session_name.as_ref()
     }
 
     pub async fn current_user(&self) -> Option<B::User> {
-        self.inner.lock().await.clone().user
+        self.session_data.lock().await.clone().user
     }
 
     pub async fn login(&self, creds: B::Credentials) -> Result<(), LoginError<B>> {
-        if self.inner.lock().await.session.is_some() {
-            return Ok(());
+        if self.session_data.lock().await.session.is_some() {
+            return Err(LoginError::AlreadyLoggedIn);
         }
 
         let user = self
@@ -53,14 +53,14 @@ impl<B: AuthnBackend> AuthHandle<B> {
             .await
             .map_err(LoginError::CreateSession)?;
 
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.session_data.lock().await;
         inner.session = Some(session);
         inner.user = Some(user);
         Ok(())
     }
 
     pub async fn refresh_session(&self) -> Result<(), B::UpdateSessionError> {
-        let mut inner = self.inner.lock().await;
+        let mut inner = self.session_data.lock().await;
         let token_hash = inner.session.as_mut().map(|session| session.token_hash());
 
         if let Some(token_hash) = token_hash {

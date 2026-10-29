@@ -119,6 +119,7 @@ impl std::error::Error for AuthSessionError {
 pub enum LoginError<Backend: AuthnBackend> {
     Authenticate(Backend::AuthenticateError),
     CreateSession(Backend::CreateSessionError),
+    AlreadyLoggedIn,
 }
 
 impl<Backend: AuthnBackend> std::fmt::Display for LoginError<Backend> {
@@ -126,6 +127,9 @@ impl<Backend: AuthnBackend> std::fmt::Display for LoginError<Backend> {
         match self {
             LoginError::Authenticate(_) => write!(f, "failed to authenticate"),
             LoginError::CreateSession(_) => write!(f, "failed to create session"),
+            LoginError::AlreadyLoggedIn => {
+                write!(f, "skipped login as there's an existing session")
+            }
         }
     }
 }
@@ -135,6 +139,7 @@ impl<Backend: AuthnBackend> std::error::Error for LoginError<Backend> {
         match self {
             LoginError::Authenticate(err) => Some(err),
             LoginError::CreateSession(err) => Some(err),
+            LoginError::AlreadyLoggedIn => None,
         }
     }
 }

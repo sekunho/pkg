@@ -82,7 +82,7 @@ where
         let Some(s) = backend.validate_session(hash).await? else {
             return Ok(None);
         };
-        if s.expires_in().is_zero() || s.created_ago() > lifetime {
+        if s.expires_in().is_zero() || s.created_ago() >= lifetime {
             return Ok(None);
         }
 

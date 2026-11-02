@@ -5,7 +5,7 @@ homepage.workspace = true
 include.workspace = true
 license.workspace = true
 repository.workspace = true
-rust-version.workspace = true
+rust-version = "1.91"
 version.workspace = true
 
 [dependencies]
@@ -16,7 +16,7 @@ axum-extra = { version = "0.12", default-features = false, features = ["cookie"]
 tower-layer = { version = "0.3", default-features = false, features = [], optional = true }
 tower-service = { version = "0.3", default-features = false, features = [], optional = true }
 
-tokio = { version = "1.53", default-features = false, features = ["rt", "sync"] }
+tokio = { version = "1.53", default-features = false, features = ["rt", "sync", "time"] }
 
 # Encoding stuff
 sha2 = "0.11"
@@ -25,18 +25,22 @@ argon2 = { version = "0.6", default-features = false, features = ["password-hash
 
 time = { version = "0.3", default-features = false, optional = true }
 
+# Observability stuff
+tracing = { version = "0.1", default-features = false, features = []}
+
 # DB
 rusqlite = { version = "0.40", default-features = false, features = [], optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.53", default-features = false, features = ["rt"] }
+tokio = { version = "1.53", default-features = false, features = ["rt", "macros", "time"] }
 
 [lints]
 workspace = true
 
 [features]
+default = ["middleware", "cookie"]
 rusqlite = ["dep:rusqlite"]
 argon2 = ["dep:argon2"]
 verification-code = []
-middleware = ["dep:tower-layer", "dep:tower-service"]
+middleware = ["cookie", "dep:tower-layer", "dep:tower-service"]
 cookie = ["dep:axum-extra", "dep:time"]

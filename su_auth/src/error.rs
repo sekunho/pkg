@@ -3,7 +3,7 @@ use std::fmt::Display;
 use axum_core::response::{IntoResponse, Response};
 use http::StatusCode;
 
-use crate::AuthnBackend;
+use crate::{AuthnBackend, session::SessionTokenHash};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -119,6 +119,71 @@ impl std::error::Error for AuthSessionError {
 pub enum LoginError<Backend: AuthnBackend> {
     Authenticate(Backend::AuthenticateError),
     CreateSession(Backend::CreateSessionError),
+    AlreadyLoggedIn,
+}
+
+#[derive(Clone, Debug)]
+pub enum LogoutError<Backend: AuthnBackend> {
+    DeleteSession(Backend::DeleteSessionError),
+    NoActiveSession,
+}
+
+impl<Backend: AuthnBackend> std::fmt::Display for LogoutError<Backend> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LogoutError::DeleteSession(_) => write!(f, "failed to delete session"),
+            LogoutError::NoActiveSession => write!(f, "there is no active session to log out"),
+        }
+    }
+}
+
+impl<Backend: AuthnBackend> std::error::Error for LogoutError<Backend> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            LogoutError::DeleteSession(err) => Some(err),
+            LogoutError::NoActiveSession => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum RefreshError<Backend: AuthnBackend> {
+    BufferSend(tokio::sync::mpsc::error::TrySendError<(SessionTokenHash, Backend::Session)>),
+    Update(Backend::UpdateSessionError),
+    MissingUpdate,
+}
+
+impl<Backend: AuthnBackend>
+    From<tokio::sync::mpsc::error::TrySendError<(SessionTokenHash, Backend::Session)>>
+    for RefreshError<Backend>
+{
+    fn from(
+        err: tokio::sync::mpsc::error::TrySendError<(SessionTokenHash, Backend::Session)>,
+    ) -> Self {
+        Self::BufferSend(err)
+    }
+}
+
+impl<Backend: AuthnBackend> std::fmt::Display for RefreshError<Backend> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RefreshError::BufferSend(_) => {
+                write!(f, "failed to dispatch session refresh to buffer")
+            }
+            RefreshError::Update(_) => write!(f, "failed to refresh session"),
+            RefreshError::MissingUpdate => write!(f, "refresh is missing"),
+        }
+    }
+}
+
+impl<Backend: AuthnBackend> std::error::Error for RefreshError<Backend> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            RefreshError::BufferSend(_) => None,
+            RefreshError::Update(err) => Some(err),
+            RefreshError::MissingUpdate => None,
+        }
+    }
 }
 
 impl<Backend: AuthnBackend> std::fmt::Display for LoginError<Backend> {
@@ -126,6 +191,9 @@ impl<Backend: AuthnBackend> std::fmt::Display for LoginError<Backend> {
         match self {
             LoginError::Authenticate(_) => write!(f, "failed to authenticate"),
             LoginError::CreateSession(_) => write!(f, "failed to create session"),
+            LoginError::AlreadyLoggedIn => {
+                write!(f, "skipped login as there's an existing session")
+            }
         }
     }
 }
@@ -135,6 +203,7 @@ impl<Backend: AuthnBackend> std::error::Error for LoginError<Backend> {
         match self {
             LoginError::Authenticate(err) => Some(err),
             LoginError::CreateSession(err) => Some(err),
+            LoginError::AlreadyLoggedIn => None,
         }
     }
 }

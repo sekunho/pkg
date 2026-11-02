@@ -63,10 +63,7 @@ where
                     })
                     .collect();
 
-                Err(FormRejection::InvalidBody {
-                    errors,
-                    raw_form,
-                })
+                Err(FormRejection::InvalidBody { errors, raw_form })
             }
         }
     }

@@ -5,7 +5,6 @@ use crate::{
     AuthnBackend,
     auth::AuthHandle,
     error::{AuthFailure, AuthRejection, AuthSessionError},
-    session::AuthSession as _,
     user::CurrentUser,
 };
 
@@ -39,24 +38,14 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let session_handle = AuthHandle::<Backend>::from_request_parts(parts, state).await?;
-        let session = &session_handle.inner.lock().await.session;
-        if session.is_none() {
-            return Err(AuthRejection::no_session());
-        }
 
-        let session = session_handle.inner.lock().await.session.clone();
-        let token_hash = session.unwrap().token_hash();
-
-        let user = session_handle
-            .backend()
-            .get_user_from_session(token_hash)
+        let session = session_handle
+            .session_data
+            .lock()
             .await
-            .map_err(|_| AuthRejection::internal())?;
-
-        match user {
-            Some(user) => Ok(user).map(|u| CurrentUser(u)),
-            None => Err(AuthRejection::no_session()),
-        }
+            .clone()
+            .ok_or_else(|| AuthRejection::no_session())?;
+        Ok(session.user)
     }
 }
 

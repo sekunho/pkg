@@ -28,6 +28,8 @@ pub mod verification;
 
 pub mod extract;
 
+pub mod worker;
+
 pub trait AuthnBackend: Debug + Clone + Send + Sync {
     type User: AuthUser<Self>;
     type Credentials: Send + Sync;
@@ -53,15 +55,15 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
         credentials: Self::Credentials,
     ) -> impl Future<Output = Result<Self::User, Self::AuthenticateError>> + Send;
 
-    fn get_user(
+    fn get_user_from_session(
         &self,
-        user_id: &UserId<Self>,
+        token_hash: SessionTokenHash,
     ) -> impl Future<Output = Result<Option<Self::User>, Self::GetUserError>> + Send;
 
     fn validate_session(
         &self,
         token: SessionTokenHash,
-    ) -> impl Future<Output = Result<(), Self::ValidateSessionError>> + Send;
+    ) -> impl Future<Output = Result<Option<Self::Session>, Self::ValidateSessionError>> + Send;
 
     fn generate_session_token() -> SessionToken;
 
@@ -72,19 +74,18 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
 
     fn delete_session(
         &self,
-        user_id: &UserId<Self>,
         token: SessionTokenHash,
     ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
 
-    fn refresh_session(
+    fn delete_all_session(
         &self,
-        token: &SessionTokenHash,
-    ) -> impl Future<Output = Result<Option<Self::Session>, Self::UpdateSessionError>> + Send;
+        user_id: &UserId<Self>,
+    ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
 
-    fn get_user_from_session(
+    fn update_sessions(
         &self,
-        token_hash: SessionTokenHash,
-    ) -> impl Future<Output = Result<Option<Self::User>, Self::GetUserError>> + Send;
+        sessions: &[Self::Session],
+    ) -> impl Future<Output = Result<usize, Self::UpdateSessionError>> + Send;
 
     #[cfg(feature = "verification-code")]
     fn upsert_verification_code(

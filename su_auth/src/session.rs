@@ -8,11 +8,14 @@ use crate::{AuthnBackend, user::UserId};
 
 pub trait AuthSession<Backend: AuthnBackend>: Debug + Clone {
     fn token_hash(&self) -> SessionTokenHash;
+    fn expires_in(&self) -> std::time::Duration;
+    fn created_ago(&self) -> std::time::Duration;
+    fn extend_expiration(&mut self, duration: std::time::Duration);
     fn user_id(&self) -> UserId<Backend>;
-    fn new(user: &Backend::User) -> Self;
+    fn new(user_id: UserId<Backend>, token_hash: SessionTokenHash) -> Self;
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct SessionTokenHash(pub(crate) [u8; 32]);
 
 #[cfg(feature = "rusqlite")]
@@ -40,7 +43,20 @@ impl AsRef<[u8; 32]> for SessionTokenHash {
     }
 }
 
+#[derive(Clone, Eq, PartialEq)]
 pub struct SessionToken(pub(crate) Vec<u8>);
+
+impl SessionToken {
+    pub fn new(bs: Vec<u8>) -> Self {
+        Self(bs)
+    }
+}
+
+impl Debug for SessionToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("SessionToken").field(&"[REDACTED]").finish()
+    }
+}
 
 impl AsRef<[u8]> for SessionToken {
     fn as_ref(&self) -> &[u8] {

@@ -1,25 +1,29 @@
 use std::fmt::{Debug, Display};
 
-use crate::{AuthnBackend, session::SessionTokenHash};
+use crate::AuthnBackend;
 
 pub struct UserId<Backend: AuthnBackend>(
     <<Backend as AuthnBackend>::User as AuthUser<Backend>>::Id,
 );
 
+impl<Backend> UserId<Backend>
+where
+    Backend: AuthnBackend,
+{
+    pub fn new(user_id: <<Backend as AuthnBackend>::User as AuthUser<Backend>>::Id) -> Self {
+        UserId(user_id)
+    }
+
+    pub fn raw_id(&self) -> &<<Backend as AuthnBackend>::User as AuthUser<Backend>>::Id {
+        &self.0
+    }
+}
+
 pub trait AuthUser<Backend: AuthnBackend>: Debug + Display + Clone + Send + Sync {
     type Id: Debug + Display + Clone + Send + Sync;
 
-    fn id(self) -> Self::Id;
-    fn session_token_hash(&self) -> &SessionTokenHash;
-    fn state(&self) -> &UserState;
+    fn id(&self) -> UserId<Backend>;
 }
 
 #[derive(Clone, Debug)]
-pub struct CurrentUser<B: AuthnBackend>(pub(crate) B::User);
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum UserState {
-    Verified,
-    Suspended,
-    Deleted,
-}
+pub struct CurrentUser<B: AuthnBackend>(pub B::User);

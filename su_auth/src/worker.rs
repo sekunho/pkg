@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use tokio::sync::mpsc::Receiver;
 
-use crate::{AuthnBackend, session::SessionTokenHash};
+use crate::{AuthnBackend, DeleteSessionsFilter, session::SessionTokenHash};
 
 pub struct SessionRefreshWorker<Backend: AuthnBackend> {
     pub(crate) backend: Backend,
@@ -18,7 +18,7 @@ where
     pub fn new(backend: Backend, rx: Receiver<(SessionTokenHash, Backend::Session)>) -> Self {
         Self {
             backend,
-            batch_size: 1,
+            batch_size: 10,
             rx,
             flush_interval: std::time::Duration::default(),
         }
@@ -43,6 +43,39 @@ where
                 .unwrap_or(0);
             tracing::debug!("Refreshed {}/{}", actual_count, buffer.len());
             tokio::time::sleep(self.flush_interval).await;
+        }
+    }
+}
+
+pub struct SessionCleanupWorker<Backend: AuthnBackend> {
+    pub(crate) backend: Backend,
+    pub cleanup_interval: std::time::Duration,
+    pub batch_size: usize,
+}
+
+impl<Backend> SessionCleanupWorker<Backend>
+where
+    Backend: AuthnBackend,
+{
+    pub fn new(backend: Backend) -> Self {
+        Self {
+            backend,
+            batch_size: 10,
+            cleanup_interval: std::time::Duration::default(),
+        }
+    }
+
+    pub async fn run(self) {
+        loop {
+            tokio::time::sleep(self.cleanup_interval).await;
+            match self
+                .backend
+                .delete_sessions(DeleteSessionsFilter::Expired)
+                .await
+            {
+                Ok(count) => tracing::info!("Deleted {count} expired sessions"),
+                Err(err) => tracing::error!("Failed to wipe expired sessions: {err}"),
+            }
         }
     }
 }

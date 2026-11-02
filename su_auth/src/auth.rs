@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::{
-    AuthnBackend,
+    AuthnBackend, DeleteSessionsFilter,
     error::{LoginError, LogoutError, RefreshError},
     session::{AuthSession as _, SessionToken, SessionTokenHash},
     user::{AuthUser as _, CurrentUser, UserId},
@@ -38,8 +38,14 @@ pub struct AuthHandle<Backend: AuthnBackend> {
     pub refresh_buffer: Option<tokio::sync::mpsc::Sender<(SessionTokenHash, Backend::Session)>>,
 }
 
-impl<B: AuthnBackend> AuthHandle<B> {
-    pub fn backend(&self) -> &B {
+#[derive(Debug, Clone, Copy)]
+pub enum LogoutFilter {
+    CurrentSession,
+    AllSessions,
+}
+
+impl<Backend: AuthnBackend> AuthHandle<Backend> {
+    pub fn backend(&self) -> &Backend {
         &self.backend
     }
 
@@ -71,7 +77,7 @@ impl<B: AuthnBackend> AuthHandle<B> {
             .map(|s| s.session.token_hash())
     }
 
-    pub async fn session_user_id(&self) -> Option<UserId<B>> {
+    pub async fn session_user_id(&self) -> Option<UserId<Backend>> {
         self.session_data
             .lock()
             .await
@@ -79,7 +85,7 @@ impl<B: AuthnBackend> AuthHandle<B> {
             .map(|s| s.session.user_id())
     }
 
-    pub async fn login(&self, creds: B::Credentials) -> Result<(), LoginError<B>> {
+    pub async fn login(&self, creds: Backend::Credentials) -> Result<(), LoginError<Backend>> {
         if self.session_data.lock().await.as_ref().is_some() {
             return Err(LoginError::AlreadyLoggedIn);
         }
@@ -90,9 +96,9 @@ impl<B: AuthnBackend> AuthHandle<B> {
             .await
             .map_err(LoginError::Authenticate)?;
 
-        let token = B::generate_session_token();
+        let token = Backend::generate_session_token();
         let token_hash = SessionTokenHash::from(token.clone());
-        let current_session = B::Session::new(user.id(), token_hash);
+        let current_session = Backend::Session::new(user.id(), token_hash);
 
         let current_session = self
             .backend()
@@ -109,27 +115,22 @@ impl<B: AuthnBackend> AuthHandle<B> {
         Ok(())
     }
 
-    pub async fn logout(&self) -> Result<(), LogoutError<B>> {
-        let Some(token_hash) = self.session_token_hash().await else {
-            return Err(LogoutError::NoActiveSession);
-        };
-
-        self.backend()
-            .delete_session(token_hash)
-            .await
-            .map_err(LogoutError::DeleteSession)?;
-
-        self.clear_session_data().await;
-        Ok(())
-    }
-
-    pub async fn logout_all(&self) -> Result<(), LogoutError<B>> {
+    pub async fn logout(&self, filters: LogoutFilter) -> Result<(), LogoutError<Backend>> {
         let Some(user_id) = self.session_user_id().await else {
             return Err(LogoutError::NoActiveSession);
         };
 
+        let Some(hash) = self.session_token_hash().await else {
+            return Err(LogoutError::NoActiveSession);
+        };
+
+        let filters = match filters {
+            LogoutFilter::CurrentSession => DeleteSessionsFilter::Hash(hash),
+            LogoutFilter::AllSessions => DeleteSessionsFilter::User(user_id),
+        };
+
         self.backend()
-            .delete_all_session(&user_id)
+            .delete_sessions(filters)
             .await
             .map_err(LogoutError::DeleteSession)?;
 
@@ -137,7 +138,7 @@ impl<B: AuthnBackend> AuthHandle<B> {
         Ok(())
     }
 
-    pub(crate) async fn refresh_session(&self) -> Result<(), RefreshError<B>> {
+    pub(crate) async fn refresh_session(&self) -> Result<(), RefreshError<Backend>> {
         let Some(created_ago) = self.session_created_ago().await else {
             return Ok(());
         };

@@ -30,6 +30,12 @@ pub mod extract;
 
 pub mod worker;
 
+pub enum DeleteSessionsFilter<Backend: AuthnBackend> {
+    Hash(SessionTokenHash),
+    User(UserId<Backend>),
+    Expired,
+}
+
 pub trait AuthnBackend: Debug + Clone + Send + Sync {
     type User: AuthUser<Self>;
     type Credentials: Send + Sync;
@@ -72,15 +78,10 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
         session: Self::Session,
     ) -> impl Future<Output = Result<Self::Session, Self::CreateSessionError>> + Send;
 
-    fn delete_session(
+    fn delete_sessions(
         &self,
-        token: SessionTokenHash,
-    ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
-
-    fn delete_all_session(
-        &self,
-        user_id: &UserId<Self>,
-    ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
+        filter: DeleteSessionsFilter<Self>,
+    ) -> impl Future<Output = Result<usize, Self::DeleteSessionError>> + Send;
 
     fn update_sessions(
         &self,

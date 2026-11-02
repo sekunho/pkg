@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 
 use crate::AuthnBackend;
 
+#[derive(Debug, Clone)]
 pub struct UserId<Backend: AuthnBackend>(
     <<Backend as AuthnBackend>::User as AuthUser<Backend>>::Id,
 );

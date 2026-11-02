@@ -36,7 +36,7 @@ where
                 v.to_str()
                     .map_err(|_| FormRejection::InvalidFormContentType)
             })
-            .and_then(|v| Ok(v.starts_with(mime::APPLICATION_WWW_FORM_URLENCODED.as_ref())))
+            .map(|v| v.starts_with(mime::APPLICATION_WWW_FORM_URLENCODED.as_ref()))
             .and_then(|valid| {
                 if valid {
                     Ok(())
@@ -82,9 +82,9 @@ pub enum FormRejection {
 impl Display for FormRejection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FormRejection::Bytes(err) => write!(f, "{}", err.to_string()),
+            FormRejection::Bytes(err) => write!(f, "{}", err),
             FormRejection::InvalidFormContentType => write!(f, "{}", EXPECTED_FORM_CONTENT_TYPE),
-            FormRejection::InvalidBody { errors: err, .. } => write!(f, "{}", err.to_string()),
+            FormRejection::InvalidBody { errors: err, .. } => write!(f, "{}", err),
         }
     }
 }

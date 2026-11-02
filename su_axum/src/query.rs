@@ -28,7 +28,7 @@ impl From<FieldErrors> for QueryRejection {
 impl Display for QueryRejection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            QueryRejection::InvalidQueries(err) => write!(f, "{}", err.to_string()),
+            QueryRejection::InvalidQueries(err) => write!(f, "{}", err),
         }
     }
 }

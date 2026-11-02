@@ -139,6 +139,12 @@ impl FieldErrors {
     }
 }
 
+impl Default for FieldErrors {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IntoResponse for FieldErrors {
     fn into_response(self) -> axum_core::response::Response {
         (StatusCode::UNPROCESSABLE_ENTITY, self.to_string()).into_response()
@@ -148,7 +154,7 @@ impl IntoResponse for FieldErrors {
 impl Display for FieldErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let msg = self.0.iter().fold(String::new(), |acc, (k, v)| {
-            format!("{}\n{}: {}", acc, k, v.to_string())
+            format!("{}\n{}: {}", acc, k, v)
         });
         write!(f, "{}", msg)
     }

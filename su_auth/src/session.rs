@@ -47,6 +47,7 @@ impl AsRef<[u8; 32]> for SessionTokenHash {
 pub struct SessionToken(pub(crate) Vec<u8>);
 
 impl SessionToken {
+    #[must_use]
     pub fn new(bs: Vec<u8>) -> Self {
         Self(bs)
     }

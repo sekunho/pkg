@@ -153,7 +153,7 @@ impl<B: AuthnBackend> AuthHandle<B> {
             return Ok(());
         }
 
-        let Some(session) = self
+        let Some(mut session) = self
             .session_data
             .lock()
             .await
@@ -163,8 +163,9 @@ impl<B: AuthnBackend> AuthHandle<B> {
             return Ok(());
         };
 
+        session.extend_expiration(new_duration);
         let count = match self.refresh_buffer {
-            Some(ref chan) => chan.try_send((token_hash, session.clone())).map(|_| 1)?,
+            Some(ref chan) => chan.try_send((token_hash, session.clone())).map(|()| 1)?,
             None => self
                 .backend
                 .update_sessions(&[session])

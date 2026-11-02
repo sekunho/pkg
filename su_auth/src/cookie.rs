@@ -21,7 +21,8 @@ pub fn create_session_cookie(
     cookie
 }
 
-pub fn invalidate<'c>(name: &'c str) -> Cookie<'c> {
+#[must_use]
+pub fn invalidate(name: &str) -> Cookie<'_> {
     Cookie::build(name)
         .removal()
         .path("/")
@@ -31,7 +32,7 @@ pub fn invalidate<'c>(name: &'c str) -> Cookie<'c> {
         .build()
 }
 
-pub fn set_cookie_header<'c>(headers: &mut HeaderMap, cookie: Cookie<'c>) {
+pub fn set_cookie_header(headers: &mut HeaderMap, cookie: Cookie<'_>) {
     if let v = cookie.encoded().to_string().as_str()
         && let Ok(v) = HeaderValue::from_str(v)
     {

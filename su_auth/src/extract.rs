@@ -44,7 +44,7 @@ where
             .lock()
             .await
             .clone()
-            .ok_or_else(|| AuthRejection::no_session())?;
+            .ok_or_else(AuthRejection::no_session)?;
         Ok(session.user)
     }
 }

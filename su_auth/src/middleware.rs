@@ -1,6 +1,9 @@
-use std::{marker::PhantomData, pin::Pin, sync::Arc};
+use std::{error::Error, marker::PhantomData, pin::Pin, sync::Arc};
 
-use axum_core::{extract::Request, response::Response};
+use axum_core::{
+    extract::Request,
+    response::{IntoResponse as _, Response},
+};
 use axum_extra::extract::CookieJar;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use tokio::sync::Mutex;
@@ -11,6 +14,7 @@ use crate::{
     AuthnBackend,
     auth::{AuthHandle, SessionData},
     cookie,
+    error::AuthRejection,
     session::{AuthSession as _, SessionToken, SessionTokenHash},
     user::CurrentUser,
 };
@@ -64,10 +68,40 @@ pub struct SessionManagerService<S, Backend: AuthnBackend> {
     pub(crate) max_session_lifetime: std::time::Duration,
 }
 
+impl<S, Backend> SessionManagerService<S, Backend>
+where
+    Backend: AuthnBackend,
+{
+    async fn validate_token(
+        backend: &Backend,
+        token: Option<SessionToken>,
+        lifetime: std::time::Duration,
+    ) -> Result<Option<SessionData<Backend>>, Box<dyn Error + Send + Sync>> {
+        let Some(token) = token else { return Ok(None) };
+        let hash = token.clone().into();
+        let Some(s) = backend.validate_session(hash).await? else {
+            return Ok(None);
+        };
+        if s.expires_in().is_zero() || s.created_ago() > lifetime {
+            return Ok(None);
+        }
+
+        let Some(user) = backend.get_user_from_session(hash).await? else {
+            return Ok(None);
+        };
+
+        Ok(Some(SessionData {
+            session: s,
+            token,
+            user: CurrentUser(user),
+        }))
+    }
+}
+
 impl<S, B, Backend> Service<Request<B>> for SessionManagerService<S, Backend>
 where
     Backend: AuthnBackend + Send + Sync + 'static,
-    S: Service<Request<B>> + Clone + 'static + Send,
+    S: Service<Request<B>, Response = Response> + Clone + 'static + Send,
     S::Future: Send,
     B: 'static + Send,
 {
@@ -102,38 +136,24 @@ where
             .unwrap_or(None);
 
         Box::pin(async move {
-            let session = if let Some(ref t) = token
-                && let Ok(s) = backend.validate_session(t.into()).await
-            {
-                s.filter(|s| !s.expires_in().is_zero() && s.created_ago() < max_session_lifetime)
-            } else {
-                None
-            };
-
-            let mut session_data = None;
-            if let Some(session) = session
-                && let Some(token) = token
-                && let Ok(Some(user)) = backend
-                    .get_user_from_session(SessionTokenHash::from(&token))
-                    .await
-            {
-                session_data = Some(SessionData {
-                    session,
-                    token,
-                    user: CurrentUser(user),
-                })
+            let data = match Self::validate_token(&backend, token, max_session_lifetime).await {
+                Ok(data) => data,
+                Err(err) => {
+                    tracing::error!("failed to validate token: {}", err);
+                    return Ok(AuthRejection::internal().into_response());
+                }
             };
 
             let handle = AuthHandle {
                 session_name,
                 backend,
-                session_data: Arc::new(Mutex::from(session_data)),
+                session_data: Arc::new(Mutex::new(data)),
                 max_session_duration,
                 max_session_lifetime,
                 refresh_buffer,
             };
-            req.extensions_mut().insert::<AuthHandle<Backend>>(handle);
 
+            req.extensions_mut().insert::<AuthHandle<Backend>>(handle);
             inner.call(req).await
         })
     }
@@ -197,7 +217,7 @@ where
         let mut inner = std::mem::replace(&mut self.inner, clone);
         let c_key = self.session_name.clone();
         let Some(auth) = req.extensions().get::<AuthHandle<Backend>>().cloned() else {
-            return Box::pin(self.inner.call(req));
+            return Box::pin(inner.call(req));
         };
 
         Box::pin(async move {
@@ -205,6 +225,7 @@ where
                 .refresh_session()
                 .await
                 .inspect_err(|e| tracing::error!("{}", e));
+
             let mut res = inner.call(req).await?;
 
             let cookie = match auth.session_data.lock().await.as_ref() {

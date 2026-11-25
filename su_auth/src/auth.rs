@@ -17,7 +17,7 @@ pub struct SessionData<Backend: AuthnBackend> {
 
 #[derive(Clone, Debug)]
 pub struct AuthHandle<Backend: AuthnBackend> {
-    pub(crate) session_name: String,
+    pub(crate) session_name: &'static str,
     pub(crate) backend: Backend,
     pub(crate) session_data: Arc<Mutex<Option<SessionData<Backend>>>>,
 

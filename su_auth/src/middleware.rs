@@ -22,7 +22,7 @@ use crate::{
 pub struct SessionManagerLayer<Backend: AuthnBackend> {
     pub backend: Backend,
     /// This will be used as the session cookie key
-    pub session_name: String,
+    pub session_name: &'static str,
 
     /// The max duration a session is allowed to be extended to.
     pub max_session_duration: std::time::Duration,
@@ -48,7 +48,7 @@ where
         Self::Service {
             inner,
             backend: self.backend.clone(),
-            session_name: self.session_name.clone(),
+            session_name: self.session_name,
             max_session_lifetime: self.max_session_lifetime,
             max_session_duration: self.max_session_duration,
             refresh_buffer: self.refresh_buffer.clone(),
@@ -59,7 +59,7 @@ where
 #[derive(Clone)]
 pub struct SessionManagerService<S, Backend: AuthnBackend> {
     pub(crate) inner: S,
-    pub(crate) session_name: String,
+    pub(crate) session_name: &'static str,
     pub(crate) backend: Backend,
     pub(crate) refresh_buffer:
         Option<tokio::sync::mpsc::Sender<(SessionTokenHash, Backend::Session)>>,
@@ -115,7 +115,7 @@ where
         // https://docs.rs/tower/latest/tower/trait.Service.html#be-careful-when-cloning-inner-services
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
-        let session_name = self.session_name.clone();
+        let session_name = self.session_name;
         let backend = self.backend.clone();
         let jar = CookieJar::from_headers(req.headers());
         let max_session_lifetime = self.max_session_lifetime;
@@ -156,7 +156,7 @@ where
 #[derive(Clone)]
 pub struct SessionRefreshLayer<Backend: AuthnBackend> {
     /// This will be used as the session cookie key
-    pub session_name: String,
+    pub session_name: &'static str,
     pub phantom: PhantomData<Backend>,
 
     /// For every refresh attempt, the session must have a specific duration left
@@ -173,7 +173,7 @@ where
     fn layer(&self, inner: S) -> Self::Service {
         Self::Service {
             inner,
-            session_name: self.session_name.clone(),
+            session_name: self.session_name,
             phantom: PhantomData,
             refresh_throttle: self.refresh_throttle,
         }
@@ -183,7 +183,7 @@ where
 #[derive(Clone)]
 pub struct SessionRefreshService<S, Backend: AuthnBackend> {
     pub inner: S,
-    pub session_name: String,
+    pub session_name: &'static str,
     phantom: PhantomData<Backend>,
     pub refresh_throttle: std::time::Duration,
 }
@@ -209,7 +209,7 @@ where
     fn call(&mut self, req: Request<B>) -> Self::Future {
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
-        let c_key = self.session_name.clone();
+        let c_key = self.session_name;
         let Some(auth) = req.extensions().get::<AuthHandle<Backend>>().cloned() else {
             return Box::pin(inner.call(req));
         };
@@ -228,7 +228,7 @@ where
                         .unwrap_or(time::Duration::MAX);
                     cookie::create_session_cookie(c_key, data.token.clone(), d)
                 }
-                None => cookie::invalidate(c_key.as_str()),
+                None => cookie::invalidate(c_key),
             };
 
             cookie::set_cookie_header(res.headers_mut(), cookie);

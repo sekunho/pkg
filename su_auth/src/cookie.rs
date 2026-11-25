@@ -6,7 +6,7 @@ use crate::session::SessionToken;
 
 #[must_use]
 pub fn create_session_cookie(
-    name: String,
+    name: &'static str,
     session_token: SessionToken,
     max_age: time::Duration,
 ) -> Cookie<'static> {
@@ -22,7 +22,7 @@ pub fn create_session_cookie(
 }
 
 #[must_use]
-pub fn invalidate(name: &str) -> Cookie<'_> {
+pub fn invalidate(name: &'static str) -> Cookie<'_> {
     Cookie::build(name)
         .removal()
         .path("/")

@@ -13,6 +13,15 @@ impl PasswordHash {
         ctx.verify_password(pbs, &hash)
     }
 
+    pub fn argon2_hash(
+        ctx: &argon2::Argon2<'static>,
+        password: &Password,
+    ) -> argon2::password_hash::Result<Self> {
+        let pbs = Into::<&[u8]>::into(password);
+        let hash = ctx.hash_password(pbs)?;
+        Ok(PasswordHash(hash.to_string()))
+    }
+
     #[must_use]
     pub fn argon2_dummy_hash(ctx: &argon2::Argon2) -> Self {
         Self(

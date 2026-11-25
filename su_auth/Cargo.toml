@@ -38,7 +38,7 @@ tokio = { version = "1.53", default-features = false, features = ["rt", "macros"
 workspace = true
 
 [features]
-default = ["middleware", "cookie"]
+default = ["middleware", "cookie", "argon2"]
 rusqlite = ["dep:rusqlite"]
 argon2 = ["dep:argon2"]
 verification-code = []

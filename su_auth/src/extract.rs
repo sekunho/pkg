@@ -39,13 +39,14 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let session_handle = AuthHandle::<Backend>::from_request_parts(parts, state).await?;
 
-        let session = session_handle
+        let user = session_handle
             .session_data
             .lock()
             .await
-            .clone()
+            .as_ref()
+            .map(|data| data.user_session.user.clone())
             .ok_or_else(AuthRejection::no_session)?;
-        Ok(session.user)
+        Ok(CurrentUser(user))
     }
 }
 

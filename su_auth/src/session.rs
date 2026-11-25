@@ -6,6 +6,12 @@ use sha2::Digest as _;
 
 use crate::{AuthnBackend, user::UserId};
 
+#[derive(Clone, Debug)]
+pub struct UserSession<Backend: AuthnBackend> {
+    pub session: Backend::Session,
+    pub user: Backend::User,
+}
+
 pub trait AuthSession<Backend: AuthnBackend>: Debug + Clone {
     fn token_hash(&self) -> SessionTokenHash;
     fn expires_in(&self) -> std::time::Duration;

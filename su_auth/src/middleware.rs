@@ -16,7 +16,6 @@ use crate::{
     cookie,
     error::AuthRejection,
     session::{AuthSession as _, SessionToken, SessionTokenHash},
-    user::CurrentUser,
 };
 
 #[derive(Clone)]
@@ -79,21 +78,16 @@ where
     ) -> Result<Option<SessionData<Backend>>, Box<dyn Error + Send + Sync>> {
         let Some(token) = token else { return Ok(None) };
         let hash = token.clone().into();
-        let Some(s) = backend.validate_session(hash).await? else {
+        let Some(session) = backend.validate_session(hash).await? else {
             return Ok(None);
         };
-        if s.expires_in().is_zero() || s.created_ago() >= lifetime {
+        if session.session.expires_in().is_zero() || session.session.created_ago() >= lifetime {
             return Ok(None);
         }
 
-        let Some(user) = backend.get_user_from_session(hash).await? else {
-            return Ok(None);
-        };
-
         Ok(Some(SessionData {
-            session: s,
+            user_session: session,
             token,
-            user: CurrentUser(user),
         }))
     }
 }
@@ -230,7 +224,7 @@ where
 
             let cookie = match auth.session_data.lock().await.as_ref() {
                 Some(data) => {
-                    let d = time::Duration::try_from(data.session.expires_in())
+                    let d = time::Duration::try_from(data.user_session.session.expires_in())
                         .unwrap_or(time::Duration::MAX);
                     cookie::create_session_cookie(c_key, data.token.clone(), d)
                 }

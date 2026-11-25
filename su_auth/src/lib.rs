@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::Debug;
 
 use crate::{
-    session::{AuthSession, SessionToken, SessionTokenHash},
+    session::{AuthSession, SessionToken, SessionTokenHash, UserSession},
     user::{AuthUser, UserId},
 };
 
@@ -45,7 +45,6 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     type Verification: crate::verification::AuthVerification<Self>;
 
     type AuthenticateError: Error + Clone + Send + Sync + 'static;
-    type GetUserError: Error + Debug + Clone + Send + Sync + 'static;
 
     type CreateSessionError: Error + Send + Sync + 'static;
     type UpdateSessionError: Error + Send + Sync + 'static;
@@ -61,15 +60,10 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
         credentials: Self::Credentials,
     ) -> impl Future<Output = Result<Self::User, Self::AuthenticateError>> + Send;
 
-    fn get_user_from_session(
-        &self,
-        token_hash: SessionTokenHash,
-    ) -> impl Future<Output = Result<Option<Self::User>, Self::GetUserError>> + Send;
-
     fn validate_session(
         &self,
         token: SessionTokenHash,
-    ) -> impl Future<Output = Result<Option<Self::Session>, Self::ValidateSessionError>> + Send;
+    ) -> impl Future<Output = Result<Option<UserSession<Self>>, Self::ValidateSessionError>> + Send;
 
     fn generate_session_token() -> SessionToken;
 

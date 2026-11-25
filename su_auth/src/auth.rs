@@ -5,15 +5,14 @@ use tokio::sync::Mutex;
 use crate::{
     AuthnBackend, DeleteSessionsFilter,
     error::{LoginError, LogoutError, RefreshError},
-    session::{AuthSession as _, SessionToken, SessionTokenHash},
-    user::{AuthUser as _, CurrentUser, UserId},
+    session::{AuthSession as _, SessionToken, SessionTokenHash, UserSession},
+    user::{AuthUser as _, UserId},
 };
 
 #[derive(Clone, Debug)]
 pub struct SessionData<Backend: AuthnBackend> {
-    pub session: Backend::Session,
+    pub user_session: UserSession<Backend>,
     pub token: SessionToken,
-    pub user: CurrentUser<Backend>,
 }
 
 #[derive(Clone, Debug)]
@@ -58,7 +57,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             .lock()
             .await
             .as_ref()
-            .map(|s| s.session.expires_in())
+            .map(|s| s.user_session.session.expires_in())
     }
 
     pub async fn session_created_ago(&self) -> Option<std::time::Duration> {
@@ -66,7 +65,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             .lock()
             .await
             .as_ref()
-            .map(|s| s.session.created_ago())
+            .map(|s| s.user_session.session.created_ago())
     }
 
     pub async fn session_token_hash(&self) -> Option<SessionTokenHash> {
@@ -74,7 +73,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             .lock()
             .await
             .as_ref()
-            .map(|s| s.session.token_hash())
+            .map(|s| s.user_session.session.token_hash())
     }
 
     pub async fn session_user_id(&self) -> Option<UserId<Backend>> {
@@ -82,7 +81,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             .lock()
             .await
             .as_ref()
-            .map(|s| s.session.user_id())
+            .map(|s| s.user_session.session.user_id())
     }
 
     pub async fn login(&self, creds: Backend::Credentials) -> Result<(), LoginError<Backend>> {
@@ -108,9 +107,11 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
 
         let mut session_data = self.session_data.lock().await;
         *session_data = Some(SessionData {
-            session: current_session,
+            user_session: UserSession {
+                session: current_session,
+                user,
+            },
             token,
-            user: CurrentUser(user),
         });
         Ok(())
     }
@@ -159,7 +160,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             .lock()
             .await
             .as_ref()
-            .map(|s| s.session.clone())
+            .map(|s| s.user_session.session.clone())
         else {
             return Ok(());
         };
@@ -198,6 +199,9 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
             return;
         };
 
-        session_data.session.extend_expiration(duration);
+        session_data
+            .user_session
+            .session
+            .extend_expiration(duration);
     }
 }

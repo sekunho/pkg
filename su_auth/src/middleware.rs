@@ -159,9 +159,41 @@ pub struct SessionRefreshLayer<Backend: AuthnBackend> {
     pub session_name: &'static str,
     pub phantom: PhantomData<Backend>,
 
-    /// For every refresh attempt, the session must have a specific duration left
-    /// before the next refresh attempt.
-    pub refresh_throttle: std::time::Duration,
+    /// When set, a session is attempted to be refreshed a few things are checked:
+    /// the new proposed duration of the session and when it expires.
+    ///
+    /// If the new proposed duration minus the actual expiration of the current
+    /// session does not equal or exceed the `refresh_after` duration, then we
+    /// skip the refresh request.
+    ///
+    /// If `None`, then the session is refreshed right away. In most cases,
+    /// you do want to set this otherwise it's gonna hit the data store quite
+    /// hard even with the refresh buffer!
+    ///
+    /// ## Calculation
+    ///
+    /// ### Scenario A
+    ///
+    /// ```text
+    /// new proposed duration = 30d
+    /// expires_in = 29 days, 23 hours, 30 minutes
+    /// refresh_after = 1 day
+    ///
+    /// 30d - 29d 23h 30m = 30 mins
+    /// 30 mins < 1 day = true (skip!)
+    /// ```
+    ///
+    /// ### Scenario B
+    ///
+    /// ```text
+    /// new proposed duration = 30d
+    /// expires_in = 28 days, 23 hours
+    /// refresh_after = 1 day
+    ///
+    /// 30d - 28d 23h = 1 day 1 hour
+    /// 1 day 1 hour < 1 day = false (refresh)
+    /// ```
+    pub refresh_after: Option<std::time::Duration>,
 }
 
 impl<S, Backend> Layer<S> for SessionRefreshLayer<Backend>
@@ -175,7 +207,7 @@ where
             inner,
             session_name: self.session_name,
             phantom: PhantomData,
-            refresh_throttle: self.refresh_throttle,
+            refresh_after: self.refresh_after,
         }
     }
 }
@@ -185,7 +217,7 @@ pub struct SessionRefreshService<S, Backend: AuthnBackend> {
     pub inner: S,
     pub session_name: &'static str,
     phantom: PhantomData<Backend>,
-    pub refresh_throttle: std::time::Duration,
+    pub refresh_after: Option<std::time::Duration>,
 }
 
 impl<S, B, Backend> Service<Request<B>> for SessionRefreshService<S, Backend>
@@ -210,13 +242,14 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
         let c_key = self.session_name;
+        let refresh_after = self.refresh_after;
         let Some(auth) = req.extensions().get::<AuthHandle<Backend>>().cloned() else {
             return Box::pin(inner.call(req));
         };
 
         Box::pin(async move {
             let _ = auth
-                .refresh_session()
+                .refresh_session(refresh_after)
                 .await
                 .inspect_err(|e| tracing::error!("{}", e));
 

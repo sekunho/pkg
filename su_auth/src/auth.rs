@@ -139,7 +139,10 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
         Ok(())
     }
 
-    pub(crate) async fn refresh_session(&self) -> Result<(), RefreshError<Backend>> {
+    pub(crate) async fn refresh_session(
+        &self,
+        refresh_after: Option<std::time::Duration>,
+    ) -> Result<(), RefreshError<Backend>> {
         let Some(created_ago) = self.session_created_ago().await else {
             return Ok(());
         };
@@ -152,6 +155,15 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
         let new_duration = self.max_session_duration.min(remaining);
         if new_duration.is_zero() {
             self.clear_session_data().await;
+            return Ok(());
+        }
+
+        let Some(expires_in) = self.session_expires_in().await else {
+            return Ok(());
+        };
+        if let Some(refresh_after) = refresh_after
+            && new_duration.saturating_sub(expires_in) < refresh_after
+        {
             return Ok(());
         }
 

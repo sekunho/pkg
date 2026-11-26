@@ -49,7 +49,7 @@ impl<Backend: AuthnBackend> AuthHandle<Backend> {
     }
 
     pub fn session_name(&self) -> &str {
-        self.session_name.as_ref()
+        self.session_name
     }
 
     pub async fn session_expires_in(&self) -> Option<std::time::Duration> {

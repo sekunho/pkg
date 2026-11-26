@@ -123,7 +123,7 @@ where
         let refresh_buffer = self.refresh_buffer.clone();
 
         let token = jar
-            .get(&self.session_name)
+            .get(self.session_name)
             .map(|c| URL_SAFE_NO_PAD.decode(c.value()).map(SessionToken))
             .transpose()
             .inspect_err(|e| tracing::error!("{}", e.to_string()))

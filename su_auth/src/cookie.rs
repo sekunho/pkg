@@ -22,7 +22,7 @@ pub fn create_session_cookie(
 }
 
 #[must_use]
-pub fn invalidate(name: &'static str) -> Cookie<'_> {
+pub fn invalidate(name: &'static str) -> Cookie<'static> {
     Cookie::build(name)
         .removal()
         .path("/")

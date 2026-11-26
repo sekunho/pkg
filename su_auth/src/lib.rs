@@ -51,7 +51,8 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     type DeleteSessionError: Error + Send + Sync + 'static;
     type ValidateSessionError: Error + Send + Sync + 'static;
 
-    type CreateVerificationCodeError: Error + Send + Sync + 'static;
+    type CheckVerificationCodeError: Error + Send + Sync + 'static;
+    type GenerateVerificationCodeError: Error + Send + Sync + 'static;
     type UpdateVerificationCodeError: Error + Send + Sync + 'static;
     type DeleteVerificationCodeError: Error + Send + Sync + 'static;
 
@@ -83,13 +84,19 @@ pub trait AuthnBackend: Debug + Clone + Send + Sync {
     ) -> impl Future<Output = Result<usize, Self::UpdateSessionError>> + Send;
 
     #[cfg(feature = "verification-code")]
+    fn check_verification_code(
+        &self,
+        verification: Self::Verification,
+    ) -> impl Future<Output = Result<(), Self::CheckVerificationCodeError>> + Send;
+
+    #[cfg(feature = "verification-code")]
     fn upsert_verification_code(
         &self,
         verification: Self::Verification,
-    ) -> impl Future<Output = Result<Self::Verification, Self::CreateSessionError>> + Send;
+    ) -> impl Future<Output = Result<Self::Verification, Self::GenerateVerificationCodeError>> + Send;
 
     #[cfg(feature = "verification-code")]
     fn delete_expired_verification(
         &self,
-    ) -> impl Future<Output = Result<(), Self::DeleteSessionError>> + Send;
+    ) -> impl Future<Output = Result<(), Self::DeleteVerificationCodeError>> + Send;
 }
